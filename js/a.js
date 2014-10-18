@@ -1,3 +1,1 @@
-define({
-	name: 'a'
-});
+define('My name is A.');
