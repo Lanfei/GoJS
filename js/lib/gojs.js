@@ -1,3 +1,10 @@
+/**
+ * GoJS 1.0.0
+ * https://github.com/Lanfei/GoJS
+ * A JavaScript module loader following CMD standard
+ * [Common Module Definition](https://github.com/cmdjs/specification/blob/master/draft/module.md)
+ */
+
 (function(global, undefined) {
 
 	// global
