@@ -16,15 +16,12 @@
 		version: '1.0.0'
 	};
 
-	var absSrc = function(script) {
-		return script.hasAttribute ? script.src : script.getAttribute('src', 4);
-	};
-
+	// path
 	var DOT_RE = /\/\.\//g;
 	var MULTI_SLASH_RE = /([^:/])\/+\//g;
 	var DOUBLE_DOT_RE = /\/[^/]+\/\.\.\//;
 
-	var normPath = function(path) {
+	function normPath(path) {
 		path = path.replace(DOT_RE, '/');
 
 		path = path.replace(MULTI_SLASH_RE, '$1/');
@@ -33,11 +30,15 @@
 			path = path.replace(DOUBLE_DOT_RE, '/');
 		}
 		return path;
-	};
+	}
 
-	var dirname = function(path) {
+	function dirname(path) {
 		return path.match(/[^?#]*\//)[0];
-	};
+	}
+
+	function absSrc(script) {
+		return script.hasAttribute ? script.src : script.getAttribute('src', 4);
+	}
 
 	// config
 	var config = {
@@ -81,18 +82,15 @@
 	gojs.config(data);
 
 	// loader
-	var modules = {},
-		uriMap = {},
-		fetchingList = [],
+	modules = {};
+	var fetchingList = [],
 		callbackList = [],
-		safariData = {
-			curScript: '',
-			queue: []
-		},
-		isSafari = /Safari/.test(navigator.userAgent),
+		currentScript = '',
+		isSync = false,
+		syncQueue = [],
 		head = document.head || document.getElementsByTagName('head')[0];
 
-	var curScript = function() {
+	function getCurrentScript() {
 		var scripts = head.getElementsByTagName('script');
 
 		// Chrome
@@ -100,11 +98,12 @@
 			return absSrc(document.currentScript);
 		}
 
-		// Safari
-		if (isSafari) {
-			return safariData.curScript;
+		// Safari, etc.
+		if (isSync) {
+			return currentScript;
 		}
 
+		// Opera 9, etc.
 		try {
 			throwAnError();
 		} catch (e) {
@@ -120,16 +119,20 @@
 			}
 		}
 
-		// IE6-9
+		// IE 6-9
 		for (var i = 0, l = scripts.length; i < l; ++i) {
 			var script = scripts[i];
 			if (script.readyState === 'interactive') {
 				return absSrc(script);
 			}
 		}
-	};
 
-	var loadModule = function(id) {
+		isSync = true;
+
+		return currentScript;
+	}
+
+	function loadModule(id) {
 		var uri = id2Uri(id);
 		if (modules[uri]) {
 			return;
@@ -138,14 +141,12 @@
 		script.src = uri;
 		script.charset = config.charset;
 		script.async = true;
-		// Safari
-		if (isSafari) {
-			if (safariData.curScript) {
-				safariData.queue.push(id);
-				return;
-			}
-			safariData.curScript = uri;
+		// Sync
+		if (getCurrentScript() && isSync) {
+			syncQueue.push(id);
+			return;
 		}
+		currentScript = uri;
 		// setTimeout: IE6
 		setTimeout(function() {
 			script.onload = script.onreadystatechange = function() {
@@ -154,41 +155,38 @@
 					head.removeChild(script);
 					script = null;
 				}
-				if (isSafari) {
-					safariData.curScript = '';
-					if (safariData.queue.length) {
-						loadModule(safariData.queue.shift());
-					}
+				currentScript = '';
+				if (isSync && syncQueue.length) {
+					loadModule(syncQueue.shift());
 				}
 			};
 			head.insertBefore(script, head.firstChild);
 		});
-	};
+	}
 
-	var id2Uri = function(id) {
-		var uri = uriMap[id];
-		if (!uri) {
+	function id2Uri(id) {
+		var uri = id;
+		if (!/^(http|https|file):\/\//.test(id)) {
 			uri = normPath(dirname(document.location.href) + config.base + id);
-			if (uri.slice(-3) !== '.js') {
-				uri += '.js';
-			}
-			uriMap[id] = uri;
+		}
+		if (uri.slice(-3) !== '.js') {
+			uri += '.js';
 		}
 		return uri;
-	};
+	}
 
-	var uri2Id = function(uri){
-		for(var id in uriMap){
-			if(uriMap[id] === uri){
-				return id;
-			}
+	function uri2Id(uri) {
+		var base = normPath(dirname(document.location.href) + config.base);
+		var id = uri.replace(base, '');
+		if (id.slice(-3) === '.js') {
+			id = id.substring(0, id.length - 3);
 		}
-		return uri;
-	};
+		return id;
+	}
 
-	var require = function(id) {
+	function require(id) {
 		return modules[id2Uri(id)];
-	};
+	}
 
 	require.async = function(ids, callback) {
 		var deps = [];
@@ -208,7 +206,7 @@
 
 	require.resolve = id2Uri;
 
-	var checkAsync = function() {
+	function checkAsync() {
 		for (var i = 0, l = callbackList.length; i < l; ++i) {
 			var args = [],
 				deps = callbackList[i].deps,
@@ -228,9 +226,9 @@
 				--l;
 			}
 		}
-	};
+	}
 
-	var resolveDeps = function() {
+	function resolveDeps() {
 		var len = fetchingList.length;
 		if (!len) {
 			return;
@@ -258,9 +256,9 @@
 				return;
 			}
 		}
-	};
+	}
 
-	var parseDeps = function(code) {
+	function parseDeps(code) {
 		var re = /(^|\b)(?!_)require\( *[\'\"][^\'\"]+[\'\"] *\)/g,
 			// matches = code.replace(/\/\/.*/g, '').match(re) || [],
 			matches = code.match(re) || [],
@@ -269,10 +267,10 @@
 			matches[i] = matches[i].replace(/require\( *[\'\"]([^\'\"]+)[\'\"] *\)/, '$1');
 		}
 		return matches;
-	};
+	}
 
 	global.define = function(factory) {
-		var uri = curScript();
+		var uri = getCurrentScript();
 		if (typeof factory === 'function') {
 			var module = {},
 				deps = parseDeps(factory.toString());
