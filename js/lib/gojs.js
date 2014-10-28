@@ -90,6 +90,8 @@
 		syncQueue = [],
 		head = document.head || document.getElementsByTagName('head')[0];
 
+	window.modules = modules;
+
 	function getCurrentScript() {
 		var scripts = head.getElementsByTagName('script');
 
@@ -133,12 +135,12 @@
 	}
 
 	function loadModule(id) {
-		var uri = id2Uri(id);
-		if (modules[uri]) {
+		if (modules[id]) {
 			return;
 		}
 
-		var script = document.createElement('script');
+		var uri = id2Uri(id),
+		script = document.createElement('script');
 		script.src = uri;
 		script.charset = config.charset;
 		script.async = true;
@@ -187,18 +189,19 @@
 		return id;
 	}
 
-	function require(id) {
-		return modules[id2Uri(id)];
+	function require(uri) {
+		return modules[uri2Id(uri)];
 	}
 
-	require.async = function(ids, callback) {
-		var deps = [];
-		if (typeof ids == 'string') {
-			ids = [ids];
+	require.async = function(uris, callback) {
+		var id, deps = [];
+		if (typeof uris == 'string') {
+			uris = [uris];
 		}
-		for (var i = 0, l = ids.length; i < l; ++i) {
-			deps.push(id2Uri(ids[i]));
-			loadModule(ids[i]);
+		for (var i = 0, l = uris.length; i < l; ++i) {
+			id = uri2Id(uris[i]);
+			deps.push(id);
+			loadModule(id);
 		}
 		asyncList.push({
 			deps: deps,
@@ -245,13 +248,13 @@
 		for (var i = len - 1; i >= 0; --i) {
 			loaded = true;
 			module = fetchingList[i];
+			id = module.id;
 			uri = module.uri;
 			factory = module.factory;
 			deps = module.dependencies;
 
 			for (var j = 0, l = deps.length; j < l; ++j) {
-				var depUri = id2Uri(deps[j]);
-				if (!modules[depUri]) {
+				if (!modules[deps[j]]) {
 					loaded = false;
 					break;
 				}
@@ -259,7 +262,7 @@
 
 			if (loaded) {
 				exports = factory(require, module.exports, module);
-				modules[uri] = exports || module.exports;
+				modules[id] = exports || module.exports;
 				fetchingList.splice(i, 1);
 				checkAsync();
 				resolveDeps();
@@ -275,18 +278,19 @@
 			deps = [];
 
 		for (var i = 0, l = matches.length; i < l; ++i) {
-			matches[i] = matches[i].replace(/require\( *[\'\"]([^\'\"]+)[\'\"] *\)/, '$1');
+			matches[i] = uri2Id(matches[i].replace(/require\( *[\'\"]([^\'\"]+)[\'\"] *\)/, '$1'));
 		}
 
 		return matches;
 	}
 
 	global.define = function(factory) {
-		var uri = getCurrentScript();
+		var uri = getCurrentScript(),
+			id = uri2Id(uri);
 		if (typeof factory === 'function') {
 			var module = {},
 				deps = parseDeps(factory.toString());
-			module.id = uri2Id(uri);
+			module.id = id;
 			module.uri = uri;
 			module.exports = {};
 			module.factory = factory;
@@ -298,7 +302,7 @@
 
 			fetchingList.push(module);
 		} else {
-			modules[uri] = factory;
+			modules[id] = factory;
 			checkAsync();
 		}
 
