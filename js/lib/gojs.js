@@ -137,16 +137,19 @@
 		if (modules[uri]) {
 			return;
 		}
+
 		var script = document.createElement('script');
 		script.src = uri;
 		script.charset = config.charset;
 		script.async = true;
+
 		// Sync
 		if (getCurrentScript() && isSync) {
 			syncQueue.push(id);
 			return;
 		}
 		currentScript = uri;
+
 		// setTimeout: IE6
 		setTimeout(function() {
 			script.onload = script.onreadystatechange = function() {
@@ -211,6 +214,7 @@
 			var args = [],
 				deps = asyncList[i].deps,
 				callback = asyncList[i].callback;
+
 			for (var j = 0, depLen = deps.length; j < depLen; ++j) {
 				var factory = modules[deps[j]];
 				if (!factory) {
@@ -221,6 +225,7 @@
 					break;
 				}
 			}
+
 			if (args.length === depLen) {
 				callback.apply(null, args);
 				asyncList.splice(i, 1);
@@ -235,6 +240,7 @@
 		if (!len) {
 			return;
 		}
+
 		var loaded, module, uri, factory, deps, exports;
 		for (var i = len - 1; i >= 0; --i) {
 			loaded = true;
@@ -242,6 +248,7 @@
 			uri = module.uri;
 			factory = module.factory;
 			deps = module.dependencies;
+
 			for (var j = 0, l = deps.length; j < l; ++j) {
 				var depUri = id2Uri(deps[j]);
 				if (!modules[depUri]) {
@@ -249,6 +256,7 @@
 					break;
 				}
 			}
+
 			if (loaded) {
 				exports = factory(require, module.exports, module);
 				modules[uri] = exports || module.exports;
@@ -265,9 +273,11 @@
 			// matches = code.replace(/\/\/.*/g, '').match(re) || [],
 			matches = code.match(re) || [],
 			deps = [];
+
 		for (var i = 0, l = matches.length; i < l; ++i) {
 			matches[i] = matches[i].replace(/require\( *[\'\"]([^\'\"]+)[\'\"] *\)/, '$1');
 		}
+
 		return matches;
 	}
 
@@ -281,14 +291,17 @@
 			module.exports = {};
 			module.factory = factory;
 			module.dependencies = deps;
+
 			for (var i = 0, l = deps.length; i < l; ++i) {
 				loadModule(deps[i]);
 			}
+
 			fetchingList.push(module);
 		} else {
 			modules[uri] = factory;
 			checkAsync();
 		}
+
 		resolveDeps();
 	};
 
