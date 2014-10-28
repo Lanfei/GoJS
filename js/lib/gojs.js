@@ -213,9 +213,11 @@
 				callback = asyncList[i].callback;
 			for (var j = 0, depLen = deps.length; j < depLen; ++j) {
 				var factory = modules[deps[j]];
-				if (factory) {
-					args.push(factory);
-				} else {
+				if (!factory) {
+					break;
+				}
+				args.push(factory);
+				if (args.length === depLen) {
 					break;
 				}
 			}
