@@ -1,7 +1,5 @@
 define(function(require, exports, module) {
 
-	console.log(module.dependencies);
-
 	var $ = require('lib/jquery');
 	window.debug = function(msg){
 		$('#log').append(msg + '<br>');
