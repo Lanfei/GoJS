@@ -82,9 +82,9 @@
 	gojs.config(data);
 
 	// loader
-	modules = {};
-	var fetchingList = [],
-		callbackList = [],
+	var modules = {},
+		fetchingList = [],
+		asyncList = [],
 		currentScript = '',
 		isSync = false,
 		syncQueue = [],
@@ -197,7 +197,7 @@
 			deps.push(id2Uri(ids[i]));
 			loadModule(ids[i]);
 		}
-		callbackList.push({
+		asyncList.push({
 			deps: deps,
 			callback: callback
 		});
@@ -207,10 +207,10 @@
 	require.resolve = id2Uri;
 
 	function checkAsync() {
-		for (var i = 0, l = callbackList.length; i < l; ++i) {
+		for (var i = 0, l = asyncList.length; i < l; ++i) {
 			var args = [],
-				deps = callbackList[i].deps,
-				callback = callbackList[i].callback;
+				deps = asyncList[i].deps,
+				callback = asyncList[i].callback;
 			for (var j = 0, depLen = deps.length; j < depLen; ++j) {
 				var factory = modules[deps[j]];
 				if (factory) {
@@ -221,7 +221,7 @@
 			}
 			if (args.length === depLen) {
 				callback.apply(null, args);
-				callbackList.splice(i, 1);
+				asyncList.splice(i, 1);
 				--i;
 				--l;
 			}
