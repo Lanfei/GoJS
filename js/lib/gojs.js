@@ -1,5 +1,5 @@
 /**
- * GoJS 1.0.0
+ * GoJS 1.1.0
  * https://github.com/Lanfei/GoJS
  * A JavaScript module loader following CMD standard
  * [Common Module Definition](https://github.com/cmdjs/specification/blob/master/draft/module.md)
@@ -13,7 +13,7 @@
 	}
 
 	var gojs = global.gojs = {
-		version: '1.0.0'
+		version: '1.1.0'
 	};
 
 	// path
@@ -42,8 +42,10 @@
 
 	// config
 	var config = {
-			base: undefined,
-			main: undefined,
+			map: {},
+			base: '',
+			main: '',
+			debug: false,
 			charset: 'utf-8'
 		},
 		scripts = document.scripts,
@@ -55,10 +57,10 @@
 			for (var key in config) {
 				config[key] = data[key] || config[key];
 			}
-			if (config['base'] === undefined) {
-				config['base'] = dirname(absSrc(goScript));
+			if (!config['base']) {
+				config['base'] = dirname(absSrc(goScript)).replace(document.location.href, '');
 			}
-			if (config['base'] && config['base'].slice(-1) !== '/') {
+			if (config['base'].slice(-1) !== '/') {
 				config['base'] += '/';
 			}
 		}
@@ -82,7 +84,8 @@
 	gojs.config(data);
 
 	// loader
-	var modules = {},
+	var loadedMap = {},
+		moduleMap = {},
 		fetchingList = [],
 		asyncList = [],
 		currentScript = '',
@@ -90,10 +93,7 @@
 		syncQueue = [],
 		head = document.head || document.getElementsByTagName('head')[0];
 
-	window.modules = modules;
-
 	function getCurrentScript() {
-		var scripts = head.getElementsByTagName('script');
 
 		// Chrome
 		if (document.currentScript) {
@@ -134,13 +134,30 @@
 		return currentScript;
 	}
 
+	function resolveMap(id) {
+		if (!config.debug) {
+			var map = config.map;
+			for (var key in map) {
+				var list = map[key];
+				for (var i = 0, l = list.length; i < l; ++i) {
+					if (list[i] === id) {
+						return key;
+					}
+				}
+			}
+		}
+		return id;
+	}
+
 	function loadModule(id) {
-		if (modules[id]) {
+		id = resolveMap(id);
+
+		if (loadedMap[id]) {
 			return;
 		}
 
 		var uri = id2Uri(id),
-		script = document.createElement('script');
+			script = document.createElement('script');
 		script.src = uri;
 		script.charset = config.charset;
 		script.async = true;
@@ -151,6 +168,7 @@
 			return;
 		}
 		currentScript = uri;
+		loadedMap[id] = true;
 
 		// setTimeout: IE6
 		setTimeout(function() {
@@ -171,10 +189,13 @@
 
 	function id2Uri(id) {
 		var uri = id;
-		if (!/^(http|https|file):\/\//.test(id)) {
+		if (!/^(http:|https:|file:)?\/\//.test(id)) {
 			uri = normPath(dirname(document.location.href) + config.base + id);
 		}
-		if (uri.slice(-3) !== '.js') {
+		if (uri.indexOf('//') === 0) {
+			uri = document.location.protocol + uri;
+		}
+		if (!/\.js($|\?)/.test(uri)) {
 			uri += '.js';
 		}
 		return uri;
@@ -190,7 +211,7 @@
 	}
 
 	function require(uri) {
-		return modules[uri2Id(uri)];
+		return moduleMap[uri2Id(uri)];
 	}
 
 	require.async = function(uris, callback) {
@@ -219,7 +240,7 @@
 				callback = asyncList[i].callback;
 
 			for (var j = 0, depLen = deps.length; j < depLen; ++j) {
-				var factory = modules[deps[j]];
+				var factory = moduleMap[deps[j]];
 				if (!factory) {
 					break;
 				}
@@ -238,6 +259,19 @@
 		}
 	}
 
+	function parseDeps(code) {
+		var re = /(^|\b)(?!_)require\( *[\'\"][^\'\"]+[\'\"] *\)/g,
+			// matches = code.replace(/\/\/.*/g, '').match(re) || [],
+			matches = code.match(re) || [],
+			deps = [];
+
+		for (var i = 0, l = matches.length; i < l; ++i) {
+			matches[i] = uri2Id(matches[i].replace(/require\( *[\'\"]([^\'\"]+)[\'\"] *\)/, '$1'));
+		}
+
+		return matches;
+	}
+
 	function resolveDeps() {
 		var len = fetchingList.length;
 		if (!len) {
@@ -254,7 +288,7 @@
 			deps = module.dependencies;
 
 			for (var j = 0, l = deps.length; j < l; ++j) {
-				if (!modules[deps[j]]) {
+				if (!moduleMap[deps[j]]) {
 					loaded = false;
 					break;
 				}
@@ -262,7 +296,7 @@
 
 			if (loaded) {
 				exports = factory(require, module.exports, module);
-				modules[id] = exports || module.exports;
+				moduleMap[id] = exports || module.exports;
 				fetchingList.splice(i, 1);
 				checkAsync();
 				resolveDeps();
@@ -271,22 +305,19 @@
 		}
 	}
 
-	function parseDeps(code) {
-		var re = /(^|\b)(?!_)require\( *[\'\"][^\'\"]+[\'\"] *\)/g,
-			// matches = code.replace(/\/\/.*/g, '').match(re) || [],
-			matches = code.match(re) || [],
-			deps = [];
+	global.define = function(factory) {
+		var index,
+			uri = getCurrentScript(),
+			id = uri2Id(uri),
+			list = config.map[id];
 
-		for (var i = 0, l = matches.length; i < l; ++i) {
-			matches[i] = uri2Id(matches[i].replace(/require\( *[\'\"]([^\'\"]+)[\'\"] *\)/, '$1'));
+		if (!config.debug && list) {
+			index = list.index || 0;
+			id = list[index];
+			uri = id2Uri(id);
+			list.index = index + 1;
 		}
 
-		return matches;
-	}
-
-	global.define = function(factory) {
-		var uri = getCurrentScript(),
-			id = uri2Id(uri);
 		if (typeof factory === 'function') {
 			var module = {},
 				deps = parseDeps(factory.toString());
@@ -302,7 +333,7 @@
 
 			fetchingList.push(module);
 		} else {
-			modules[id] = factory;
+			moduleMap[id] = factory;
 			checkAsync();
 		}
 
@@ -312,7 +343,7 @@
 	global.define.cmd = {};
 
 	if (config.main) {
-		loadModule(config.main);
+		loadModule(uri2Id(config.main));
 	}
 
 })(this);

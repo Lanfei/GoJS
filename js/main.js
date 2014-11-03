@@ -1,3 +1,10 @@
+gojs.config({
+	// debug: true,
+	map: {
+		ef: ['e', 'f']
+	}
+});
+
 define(function(require, exports, module) {
 
 	var $ = require('lib/jquery');
@@ -14,5 +21,4 @@ define(function(require, exports, module) {
 	debug(a);
 	b.sayHi();
 	c.sayHi();
-
 });

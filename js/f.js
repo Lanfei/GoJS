@@ -1,8 +1,6 @@
 define(function(require, exports, module){
-	exports.name = 'E';
+	exports.name = 'F';
 	exports.sayHi = function(){
-		debug('I am E...');
-		var f = require('f');
-		f.sayHi();
+		debug('I am E\'s girlfriend, F.');
 	};
 });

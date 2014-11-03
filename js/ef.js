@@ -1,0 +1,1 @@
+define(function(require,exports){exports.name="E",exports.sayHi=function(){debug("I am E...");var f=require("f");f.sayHi()}}),define(function(require,exports){exports.name="F",exports.sayHi=function(){debug("I am E's girlfriend, F.")}});
