@@ -5,9 +5,9 @@
  * [Common Module Definition](https://github.com/cmdjs/specification/blob/master/draft/module.md)
  */
 
-(function(global, undefined) {
+(function(global) {
 
-	// global
+	// GoJS
 	if (global.gojs) {
 		return;
 	}
@@ -16,7 +16,7 @@
 		version: '1.1.0'
 	};
 
-	// path
+	// Path
 	var DOT_RE = /\/\.\//g;
 	var MULTI_SLASH_RE = /([^:/])\/+\//g;
 	var DOUBLE_DOT_RE = /\/[^/]+\/\.\.\//;
@@ -42,7 +42,7 @@
 		return script.hasAttribute ? script.src : script.getAttribute('src', 4);
 	}
 
-	// config
+	// Config
 	var config = {
 			map: {},
 			base: '',
@@ -50,31 +50,65 @@
 			debug: false,
 			charset: 'utf-8'
 		},
+		base,
+		uriMap = {},
+		initialized = false,
 		scripts = document.scripts,
 		goScript = scripts[scripts.length - 1],
-		data = goScript.dataset;
+		dataset = goScript.dataset;
 
+	// config function
 	gojs.config = function(data) {
-		if (data) {
-			for (var key in config) {
-				config[key] = data[key] || config[key];
-			}
-			var base = config['base'];
-			if (!PROTOCOL_RE.test(base)) {
-				base = dirname(document.location.href) + base;
-			} else if (base.indexOf('//') === 0) {
-				base = document.location.protocol + base;
-			}
-			if (base.slice(-1) !== '/') {
-				base += '/';
-			}
-			config['base'] = base;
+		if (!data) {
+			return config;
 		}
-		return config;
+
+		for (var key in config) {
+			config[key] = data[key] || config[key];
+		}
+
+		// normalize base option
+		base = config.base;
+		if (!PROTOCOL_RE.test(base)) {
+			base = dirname(document.location.href) + base;
+		} else if (base.indexOf('//') === 0) {
+			base = document.location.protocol + base;
+		}
+		if (base.slice(-1) !== '/') {
+			base += '/';
+		}
+
+		// normalize map option
+		if (!config.debug) {
+			var idList, uriList,
+				idMap = config.map;
+			for (var id in idMap) {
+				idList = idMap[id];
+				uriList = [];
+				for (var i = 0, l = idList.length; i < l; ++i) {
+					uriList.push(id2Uri(idList[i]));
+				}
+				uriMap[id2Uri(id)] = uriList;
+			}
+		}
 	};
 
-	if (!data) {
-		data = {};
+	// init GoJS
+	gojs.init = function(main) {
+		if (!initialized) {
+			if (main) {
+				gojs.config({
+					main: main
+				});
+			}
+			loadModule(id2Uri(config.main, absSrc(goScript)));
+			initialized = true;
+		}
+	};
+
+	// read dataset in old browers
+	if (!dataset) {
+		dataset = {};
 		var attrs = goScript.attributes;
 		for (var i = 0, l = attrs.length; i < l; ++i) {
 			var item = attrs[i],
@@ -87,19 +121,17 @@
 		}
 	}
 
-	gojs.config(data);
+	gojs.config(dataset);
 
-	// loader
+	// Loader
 	var loadedMap = {},
 		moduleMap = {},
-		fetchingList = [],
 		asyncList = [],
+		fetchingList = [],
 		currentScript = '',
-		isSync = false,
 		syncQueue = [],
+		isSync = false,
 		head = document.head || document.getElementsByTagName('head')[0];
-
-	window.moduleMap = moduleMap;
 
 	function getCurrentScript() {
 
@@ -137,17 +169,19 @@
 			}
 		}
 
+		// use sync mode if current script is unable to get
 		isSync = true;
 
 		return currentScript;
 	}
 
+	// convert ID to URI based on referer
 	function id2Uri(id, referer) {
 		var uri = id;
 		if (referer && id.indexOf('.') === 0) {
 			uri = normPath(dirname(referer) + id);
 		} else if (!PROTOCOL_RE.test(id)) {
-			uri = normPath(config.base + id);
+			uri = normPath(base + id);
 		} else if (uri.indexOf('//') === 0) {
 			uri = document.location.protocol + uri;
 		}
@@ -157,42 +191,44 @@
 		return uri;
 	}
 
+	// convert URI to ID
 	function uri2Id(uri) {
-		var id = uri.replace(config.base, '');
-		if (!PROTOCOL_RE.test(id)) {
-			id = './' + id;
-		}
+		var id = uri.replace(base, '');
+		// if (!PROTOCOL_RE.test(id)) {
+		// 	id = './' + id;
+		// }
 		if (id.slice(-3) === '.js') {
 			id = id.substring(0, id.length - 3);
 		}
 		return id;
 	}
 
-	function resolveMap(id, referer) {
-		var uri = id2Uri(id, referer),
-			map = config['map'],
-			list;
-		if (!config.debug && map) {
-			for (var key in map) {
-				list = map[key];
-				for (var i = 0, l = list.length; i < l; ++i) {
-					if (id2Uri(list[i]) === uri) {
-						return id2Uri(key);
-					}
+	// search the uri of merged files
+	function resolveMap(uri) {
+		for (var key in uriMap) {
+			var list = uriMap[key];
+			for (var i = 0, l = list.length; i < l; ++i) {
+				if (list[i] === uri) {
+					return key;
 				}
 			}
 		}
 		return uri;
 	}
 
-	function loadModule(id, referer) {
+	// load module by uri
+	function loadModule(uri) {
 
-		var uri = resolveMap(id, referer);
+		if (!config.debug) {
+			uri = resolveMap(uri);
+		}
 
+		// prevent multiple loading
 		if (loadedMap[uri]) {
 			return;
 		}
 
+		// create script node
 		var script = document.createElement('script');
 		script.src = uri;
 		script.charset = config.charset;
@@ -223,6 +259,7 @@
 		});
 	}
 
+	// a factory to create require function
 	function requireFactory(uri) {
 		var require = function(id) {
 			return moduleMap[id2Uri(id, uri)];
@@ -232,16 +269,18 @@
 			return id2Uri(id, uri);
 		};
 
-		require.async = function(deps, callback) {
-			if (typeof deps == 'string') {
-				deps = [deps];
+		require.async = function(ids, callback) {
+			var dep, deps = [];
+			if (typeof ids == 'string') {
+				ids = [ids];
 			}
-			for (var i = 0, l = deps.length; i < l; ++i) {
-				loadModule(deps[i], uri);
+			for (var i = 0, l = ids.length; i < l; ++i) {
+				dep = id2Uri(ids[i], uri);
+				loadModule(dep);
+				deps.push(dep);
 			}
 			asyncList.push({
-				deps: deps || [],
-				referer: uri,
+				deps: deps,
 				callback: callback
 			});
 		};
@@ -249,17 +288,17 @@
 		return require;
 	}
 
-	function checkAsync() {
+	// resolve async tasks
+	function resolveAsync() {
 		for (var i = 0, l = asyncList.length; i < l; ++i) {
 			var args = [],
 				item = asyncList[i],
 				deps = item.deps,
-				referer = item.referer,
 				callback = item.callback;
 
 			for (var j = 0, depLen = deps.length; j < depLen; ++j) {
-				var uri = id2Uri(deps[j], referer);
-				var factory = moduleMap[uri];
+				var dep = deps[j],
+					factory = moduleMap[dep];
 				if (!factory) {
 					break;
 				}
@@ -278,6 +317,7 @@
 		}
 	}
 
+	// parse the dependencies in factory
 	function parseDeps(factory) {
 		var re = /(^|\b)(?!_)require\( *[\'\"][^\'\"]+[\'\"] *\)/g,
 			code = factory.toString(),
@@ -291,6 +331,7 @@
 		return deps;
 	}
 
+	// resolve require tasks
 	function resolveDeps() {
 		var len = fetchingList.length;
 		if (!len) {
@@ -319,48 +360,46 @@
 				exports = factory(require, module.exports, module);
 				moduleMap[uri] = exports || module.exports;
 				fetchingList.splice(i, 1);
-				checkAsync();
+				resolveAsync();
 				resolveDeps();
 				return;
 			}
 		}
 	}
 
+	// define a factory
 	global.define = function(factory) {
-		var uri = getCurrentScript(),
-			id = uri2Id(uri);
+		var uri = getCurrentScript();
 
+		// correct the uri in merged module
 		if (!config.debug) {
 			var index,
-				list = config.map[id];
-			if (!list && id.indexOf('./') === 0) {
-				list = config.map[id.slice(2)];
-			}
+				list = uriMap[uri];
 			if (list) {
 				index = list.index || 0;
-				id = list[index];
-				uri = id2Uri(id);
+				uri = list[index];
 				list.index = index + 1;
 			}
 		}
 
 		if (typeof factory === 'function') {
+
 			var module = {},
 				deps = parseDeps(factory);
-			module.id = id;
+			module.id = uri2Id(uri);
 			module.uri = uri;
 			module.exports = {};
 			module.factory = factory;
 			module.dependencies = deps;
 
 			for (var i = 0, l = deps.length; i < l; ++i) {
-				loadModule(deps[i], uri);
+				loadModule(id2Uri(deps[i], uri));
 			}
 
 			fetchingList.push(module);
 		} else {
 			moduleMap[uri] = factory;
-			checkAsync();
+			resolveAsync();
 		}
 
 		resolveDeps();
@@ -369,7 +408,7 @@
 	global.define.cmd = {};
 
 	if (config.main) {
-		loadModule(config.main, absSrc(goScript));
+		gojs.init();
 	}
 
 })(this);
