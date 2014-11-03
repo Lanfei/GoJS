@@ -1,6 +1,6 @@
 define(function(require, exports, module){
 	exports.name = 'F';
 	exports.sayHi = function(){
-		debug('I am E\'s girlfriend, F.');
+		debug('I am merged with E, but uri is still ' + module.uri);
 	};
 });

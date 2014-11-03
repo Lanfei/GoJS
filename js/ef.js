@@ -1,1 +1,1 @@
-define(function(require,exports){exports.name="E",exports.sayHi=function(){debug("I am E...");var f=require("f");f.sayHi()}}),define(function(require,exports){exports.name="F",exports.sayHi=function(){debug("I am E's girlfriend, F.")}});
+define(function(require,exports,module){exports.name="E",exports.sayHi=function(){debug("E's uri is "+module.uri);var f=require("./f");f.sayHi()}}),define(function(require,exports,module){exports.name="F",exports.sayHi=function(){debug("I am merged with E, but uri is still "+module.uri)}});
