@@ -124,7 +124,8 @@
 	gojs.config(dataset);
 
 	// Loader
-	var loadedMap = {},
+	var depMap = {},
+		loadedMap = {},
 		moduleMap = {},
 		asyncList = [],
 		fetchingList = [],
@@ -229,7 +230,8 @@
 		}
 
 		// create script node
-		var script = document.createElement('script');
+		var script;
+		script = document.createElement('script');
 		script.src = uri;
 		script.charset = config.charset;
 		script.async = true;
@@ -261,6 +263,7 @@
 
 	// a factory to create require function
 	function requireFactory(uri) {
+
 		var require = function(id) {
 			return moduleMap[id2Uri(id, uri)];
 		};
@@ -269,6 +272,7 @@
 			return id2Uri(id, uri);
 		};
 
+		// load module in async mode
 		require.async = function(ids, callback) {
 			var dep, deps = [];
 			if (typeof ids == 'string') {
@@ -384,26 +388,36 @@
 
 		if (typeof factory === 'function') {
 
-			var module = {},
+			var depUri, module,
 				deps = parseDeps(factory);
+			module = {};
 			module.id = uri2Id(uri);
 			module.uri = uri;
 			module.exports = {};
 			module.factory = factory;
 			module.dependencies = deps;
+			module._remains = deps.length;
 
 			for (var i = 0, l = deps.length; i < l; ++i) {
-				loadModule(id2Uri(deps[i], uri));
+				depUri = id2Uri(deps[i], uri);
+				depMap[depUri] = depMap[depUri] || [];
+				depMap[depUri].push(uri);
+				loadModule(depUri);
 			}
 
 			fetchingList.push(module);
 		} else {
 			moduleMap[uri] = factory;
+
+			// TODO
+
 			resolveAsync();
 		}
 
 		resolveDeps();
 	};
+
+	window.depMap = depMap;
 
 	global.define.cmd = {};
 
