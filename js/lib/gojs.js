@@ -1,5 +1,5 @@
 /**
- * GoJS 1.2.0
+ * GoJS 1.2.1
  * https://github.com/Lanfei/GoJS
  * A JavaScript module loader following CMD standard
  * [Common Module Definition](https://github.com/cmdjs/specification/blob/master/draft/module.md)
@@ -13,7 +13,7 @@
 	}
 
 	var gojs = global.gojs = {
-		version: '1.2.0'
+		version: '1.2.1'
 	};
 
 	// Path
@@ -121,9 +121,8 @@
 	gojs.config(dataset);
 
 	// Loader
-	var loadedMap = {},
-		moduleMap = {},
-		waitingMap = {},
+	var moduleMap = {},
+		loadedMap = {},
 		syncQueue = [],
 		isSync = false,
 		currentScript = '',
@@ -197,7 +196,7 @@
 		return id;
 	}
 
-	// search the uri of merged files
+	// search the uri of merged modules
 	function resolveUriMap(uri) {
 		for (var key in uriMap) {
 			var list = uriMap[key];
@@ -212,41 +211,45 @@
 
 	// load module by uri
 	function loadModule(uri) {
+		var module = moduleMap[uri];
 
-		// create a module object by uri
-		if (!moduleMap[uri]) {
-			moduleMap[uri] = {
+		// init module
+		if (module === undefined) {
+			module = moduleMap[uri] = {
 				id: uri2Id(uri),
 				uri: uri,
 				factory: null,
 				exports: null,
 				dependencies: null,
-				remains: 0
+				_waitings: [],
+				_remains: 0
 			};
 		}
 
-		// get the real uri in map
+		// get the uri of merged modules
 		if (!config.debug) {
 			uri = resolveUriMap(uri);
 		}
 
-		// prevent multiple loading
-		if (loadedMap[uri]) {
-			return;
-		}
-		loadedMap[uri] = true;
-
 		// sync mode
 		if (getCurrentScript() && isSync) {
 			syncQueue.push(uri);
-			return;
+			return module;
 		}
-		currentScript = uri;
+
+		// prevent multiple loading
+		if (loadedMap[uri]) {
+			if (syncQueue.length) {
+				loadModule(syncQueue.shift());
+			}
+			return module;
+		}
+		loadedMap[uri] = true;
 
 		// create script element
 		var script;
 		script = document.createElement('script');
-		script.src = uri;
+		script.src = currentScript = uri;
 		script.charset = config.charset;
 		script.async = true;
 
@@ -259,18 +262,20 @@
 					script = null;
 				}
 				currentScript = '';
-				if (isSync && syncQueue.length) {
+				if (syncQueue.length) {
 					loadModule(syncQueue.shift());
 				}
 			};
 			head.insertBefore(script, head.firstChild);
 		});
+
+		return module;
 	}
 
 	// a factory to create require function
 	function requireFactory(uri) {
 
-		// require function
+		// the require function
 		var require = function(id) {
 			var uri = id2Uri(id, uri);
 			return moduleMap[uri].exports;
@@ -284,21 +289,20 @@
 		// load module in async mode
 		require.async = function(ids, callback) {
 			var deps = [],
-				depUri;
+				depUri, depModule;
 
 			if (typeof ids == 'string') {
 				ids = [ids];
 			}
 
-			callback.deps = deps;
-			callback.remains = ids.length;
+			callback._deps = deps;
+			callback._remains = ids.length;
 
 			// load dependencies and update waiting map
 			for (var i = 0, l = ids.length; i < l; ++i) {
 				depUri = id2Uri(ids[i], uri);
-				loadModule(depUri);
-				waitingMap[depUri] = waitingMap[depUri] || [];
-				waitingMap[depUri].push(callback);
+				depModule = loadModule(depUri);
+				depModule._waitings.push(callback);
 				deps.push(depUri);
 			}
 		};
@@ -306,50 +310,51 @@
 		return require;
 	}
 
-	// execute callback function
+	// call this function when callback's dependencies are loaded
 	function emitCallback(callback) {
 		var args = [],
-			deps = callback.deps;
+			deps = callback._deps;
+
 		for (var i = 0, l = deps.length; i < l; ++i) {
 			args.push(moduleMap[deps[i]].exports);
 		}
-		delete callback.deps;
-		delete callback.remains;
+
 		callback.apply(null, args);
+
+		// reduce memory
+		delete callback._deps;
+		delete callback._remains;
 	}
 
 	// call this function when module is loaded
 	function emitload(module) {
 		var uri = module.uri,
 			factory = module.factory,
-			require, exports;
+			waitings = module._waitings,
+			require, exports, waiting;
 
-		// reduce memory
-		delete module.remains;
-
+		// save exports if factory is a function
 		if (typeof factory === 'function') {
 			require = requireFactory(uri);
 			exports = factory(require, module.exports, module);
 			module.exports = exports || module.exports;
 		}
 
-		// 
-		var waiting,
-			waitingList = waitingMap[uri];
-		if (waitingList) {
-			// reduce memory
-			delete waitingMap[uri];
-			for (var i = 0, l = waitingList.length; i < l; ++i) {
-				waiting = waitingList[i];
-				if (--waiting.remains === 0) {
-					if (typeof waiting === 'function') {
-						emitCallback(waiting);
-					} else {
-						emitload(waiting);
-					}
+		// notify waiting modules or callbacks
+		for (var i = 0, l = waitings.length; i < l; ++i) {
+			waiting = waitings[i];
+			if (--waiting._remains === 0) {
+				if (typeof waiting === 'function') {
+					emitCallback(waiting);
+				} else {
+					emitload(waiting);
 				}
 			}
 		}
+
+		// reduce memory
+		delete module._waitings;
+		delete module._remains;
 	}
 
 	// parse the dependencies in factory
@@ -366,11 +371,12 @@
 		return deps;
 	}
 
-	// save module and check dependencies
+	// save module and resolve dependencies
 	function saveModule(uri, factory) {
 		var module = moduleMap[uri],
 			exports, deps;
 
+		// update module
 		if (typeof factory === 'function') {
 			exports = {};
 			deps = parseDeps(factory);
@@ -382,20 +388,21 @@
 		module.factory = factory;
 		module.exports = exports;
 		module.dependencies = deps;
-		module.remains = deps.length;
+		module._remains = deps.length;
 
+		// resolve dependencies
+		var depUri, depModule;
 		for (var i = 0, l = deps.length; i < l; ++i) {
-			var depUri = id2Uri(deps[i], uri),
-				depModule = moduleMap[depUri];
-			if (depModule && depModule.remains === undefined) {
-				--module.remains;
+			depUri = id2Uri(deps[i], uri);
+			depModule = loadModule(depUri);
+			if (depModule._remains === undefined) {
+				--module._remains;
 			} else {
-				loadModule(depUri);
-				waitingMap[depUri] = waitingMap[depUri] || [];
-				waitingMap[depUri].push(module);
+				depModule._waitings.push(module);
 			}
 		}
-		if (module.remains === 0) {
+
+		if (module._remains === 0) {
 			emitload(module);
 		}
 	}
@@ -404,7 +411,7 @@
 	global.define = function(factory) {
 		var uri = getCurrentScript();
 
-		// correct the uri in merged module
+		// correct the uri of merged modules
 		if (!config.debug) {
 			var index,
 				list = uriMap[uri];
@@ -418,8 +425,10 @@
 		saveModule(uri, factory);
 	};
 
+	// an empty object to determine if a CMD loader exists
 	global.define.cmd = {};
 
+	// auto initialization
 	if (config.main) {
 		gojs.init();
 	}
