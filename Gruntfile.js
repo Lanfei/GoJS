@@ -13,7 +13,7 @@ module.exports = function(grunt) {
 				},
 				default: {
 					files: {
-						'js/lib/gojs.min.js': 'js/lib/gojs.js',
+						'js/lib/go.min.js': 'js/lib/go.js',
 						'js/ef.min.js': ['js/e.js', 'js/f.js']
 					}
 				}
