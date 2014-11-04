@@ -5,7 +5,7 @@
  * [Common Module Definition](https://github.com/cmdjs/specification/blob/master/draft/module.md)
  */
 
-(function(global) {
+(function(global, undefined) {
 
 	// GoJS
 	if (global.gojs) {
@@ -52,14 +52,13 @@
 		},
 		base,
 		uriMap = {},
-		initialized = false,
 		scripts = document.scripts,
 		goScript = scripts[scripts.length - 1],
 		dataset = goScript.dataset;
 
 	// config function
 	gojs.config = function(data) {
-		if (!data) {
+		if (data === undefined) {
 			return config;
 		}
 
@@ -95,19 +94,16 @@
 
 	// init GoJS
 	gojs.init = function(main) {
-		if (!initialized) {
-			if (main) {
-				gojs.config({
-					main: main
-				});
-			}
-			loadModule(id2Uri(config.main, absSrc(goScript)));
-			initialized = true;
+		if (main) {
+			gojs.config({
+				main: main
+			});
 		}
+		loadModule(id2Uri(config.main, absSrc(goScript)));
 	};
 
 	// read dataset in old browers
-	if (!dataset) {
+	if (dataset === undefined) {
 		dataset = {};
 		var attrs = goScript.attributes;
 		for (var i = 0, l = attrs.length; i < l; ++i) {
@@ -116,24 +112,24 @@
 				nodeValue = item.nodeValue;
 
 			if (nodeName.indexOf('data-') === 0) {
-				data[nodeName.replace('data-', '')] = nodeValue;
+				dataset[nodeName.replace('data-', '')] = nodeValue;
 			}
 		}
 	}
 
+	// save config in dataset
 	gojs.config(dataset);
 
 	// Loader
-	var depMap = {},
-		loadedMap = {},
+	var loadedMap = {},
 		moduleMap = {},
-		asyncList = [],
-		fetchingList = [],
-		currentScript = '',
+		waitingMap = {},
 		syncQueue = [],
 		isSync = false,
+		currentScript = '',
 		head = document.head || document.getElementsByTagName('head')[0];
 
+	// get the url of defining script
 	function getCurrentScript() {
 
 		// Chrome
@@ -195,9 +191,6 @@
 	// convert URI to ID
 	function uri2Id(uri) {
 		var id = uri.replace(base, '');
-		// if (!PROTOCOL_RE.test(id)) {
-		// 	id = './' + id;
-		// }
 		if (id.slice(-3) === '.js') {
 			id = id.substring(0, id.length - 3);
 		}
@@ -205,7 +198,7 @@
 	}
 
 	// search the uri of merged files
-	function resolveMap(uri) {
+	function resolveUriMap(uri) {
 		for (var key in uriMap) {
 			var list = uriMap[key];
 			for (var i = 0, l = list.length; i < l; ++i) {
@@ -220,29 +213,42 @@
 	// load module by uri
 	function loadModule(uri) {
 
+		// create a module object by uri
+		if (!moduleMap[uri]) {
+			moduleMap[uri] = {
+				id: uri2Id(uri),
+				uri: uri,
+				factory: null,
+				exports: null,
+				dependencies: null,
+				remains: 0
+			};
+		}
+
+		// get the real uri in map
 		if (!config.debug) {
-			uri = resolveMap(uri);
+			uri = resolveUriMap(uri);
 		}
 
 		// prevent multiple loading
 		if (loadedMap[uri]) {
 			return;
 		}
+		loadedMap[uri] = true;
 
-		// create script node
-		var script;
-		script = document.createElement('script');
-		script.src = uri;
-		script.charset = config.charset;
-		script.async = true;
-
-		// Sync
+		// sync mode
 		if (getCurrentScript() && isSync) {
 			syncQueue.push(uri);
 			return;
 		}
 		currentScript = uri;
-		loadedMap[uri] = true;
+
+		// create script element
+		var script;
+		script = document.createElement('script');
+		script.src = uri;
+		script.charset = config.charset;
+		script.async = true;
 
 		// setTimeout: IE6
 		setTimeout(function() {
@@ -264,59 +270,84 @@
 	// a factory to create require function
 	function requireFactory(uri) {
 
+		// require function
 		var require = function(id) {
-			return moduleMap[id2Uri(id, uri)];
+			var uri = id2Uri(id, uri);
+			return moduleMap[uri].exports;
 		};
 
+		// convert ID to URI according to current script
 		require.resolve = function(id) {
 			return id2Uri(id, uri);
 		};
 
 		// load module in async mode
 		require.async = function(ids, callback) {
-			var dep, deps = [];
+			var deps = [],
+				depUri;
+
 			if (typeof ids == 'string') {
 				ids = [ids];
 			}
+
+			callback.deps = deps;
+			callback.remains = ids.length;
+
+			// load dependencies and update waiting map
 			for (var i = 0, l = ids.length; i < l; ++i) {
-				dep = id2Uri(ids[i], uri);
-				loadModule(dep);
-				deps.push(dep);
+				depUri = id2Uri(ids[i], uri);
+				loadModule(depUri);
+				waitingMap[depUri] = waitingMap[depUri] || [];
+				waitingMap[depUri].push(callback);
+				deps.push(depUri);
 			}
-			asyncList.push({
-				deps: deps,
-				callback: callback
-			});
 		};
 
 		return require;
 	}
 
-	// resolve async tasks
-	function resolveAsync() {
-		for (var i = 0, l = asyncList.length; i < l; ++i) {
-			var args = [],
-				item = asyncList[i],
-				deps = item.deps,
-				callback = item.callback;
+	// execute callback function
+	function emitCallback(callback) {
+		var args = [],
+			deps = callback.deps;
+		for (var i = 0, l = deps.length; i < l; ++i) {
+			args.push(moduleMap[deps[i]].exports);
+		}
+		delete callback.deps;
+		delete callback.remains;
+		callback.apply(null, args);
+	}
 
-			for (var j = 0, depLen = deps.length; j < depLen; ++j) {
-				var dep = deps[j],
-					factory = moduleMap[dep];
-				if (!factory) {
-					break;
-				}
-				args.push(factory);
-				if (args.length === depLen) {
-					break;
-				}
-			}
+	// call this function when module is loaded
+	function emitload(module) {
+		var uri = module.uri,
+			factory = module.factory,
+			require, exports;
 
-			if (args.length === depLen) {
-				callback.apply(null, args);
-				asyncList.splice(i, 1);
-				--i;
-				--l;
+		// reduce memory
+		delete module.remains;
+
+		if (typeof factory === 'function') {
+			require = requireFactory(uri);
+			exports = factory(require, module.exports, module);
+			module.exports = exports || module.exports;
+		}
+
+		// 
+		var waiting,
+			waitingList = waitingMap[uri];
+		if (waitingList) {
+			// reduce memory
+			delete waitingMap[uri];
+			for (var i = 0, l = waitingList.length; i < l; ++i) {
+				waiting = waitingList[i];
+				if (--waiting.remains === 0) {
+					if (typeof waiting === 'function') {
+						emitCallback(waiting);
+					} else {
+						emitload(waiting);
+					}
+				}
 			}
 		}
 	}
@@ -335,43 +366,41 @@
 		return deps;
 	}
 
-	// resolve require tasks
-	function resolveDeps() {
-		var len = fetchingList.length;
-		if (!len) {
-			return;
+	// save module and check dependencies
+	function saveModule(uri, factory) {
+		var module = moduleMap[uri],
+			exports, deps;
+
+		if (typeof factory === 'function') {
+			exports = {};
+			deps = parseDeps(factory);
+		} else {
+			exports = factory;
+			deps = [];
 		}
 
-		var loaded, factory, require, exports, module, id, uri, deps, depUri;
-		for (var i = len - 1; i >= 0; --i) {
-			loaded = true;
-			module = fetchingList[i];
-			id = module.id;
-			uri = module.uri;
-			factory = module.factory;
-			deps = module.dependencies;
+		module.factory = factory;
+		module.exports = exports;
+		module.dependencies = deps;
+		module.remains = deps.length;
 
-			for (var j = 0, l = deps.length; j < l; ++j) {
-				depUri = id2Uri(deps[j], uri);
-				if (!moduleMap[depUri]) {
-					loaded = false;
-					break;
-				}
+		for (var i = 0, l = deps.length; i < l; ++i) {
+			var depUri = id2Uri(deps[i], uri),
+				depModule = moduleMap[depUri];
+			if (depModule && depModule.remains === undefined) {
+				--module.remains;
+			} else {
+				loadModule(depUri);
+				waitingMap[depUri] = waitingMap[depUri] || [];
+				waitingMap[depUri].push(module);
 			}
-
-			if (loaded) {
-				require = requireFactory(uri);
-				exports = factory(require, module.exports, module);
-				moduleMap[uri] = exports || module.exports;
-				fetchingList.splice(i, 1);
-				resolveAsync();
-				resolveDeps();
-				return;
-			}
+		}
+		if (module.remains === 0) {
+			emitload(module);
 		}
 	}
 
-	// define a factory
+	// define a module
 	global.define = function(factory) {
 		var uri = getCurrentScript();
 
@@ -386,38 +415,8 @@
 			}
 		}
 
-		if (typeof factory === 'function') {
-
-			var depUri, module,
-				deps = parseDeps(factory);
-			module = {};
-			module.id = uri2Id(uri);
-			module.uri = uri;
-			module.exports = {};
-			module.factory = factory;
-			module.dependencies = deps;
-			module._remains = deps.length;
-
-			for (var i = 0, l = deps.length; i < l; ++i) {
-				depUri = id2Uri(deps[i], uri);
-				depMap[depUri] = depMap[depUri] || [];
-				depMap[depUri].push(uri);
-				loadModule(depUri);
-			}
-
-			fetchingList.push(module);
-		} else {
-			moduleMap[uri] = factory;
-
-			// TODO
-
-			resolveAsync();
-		}
-
-		resolveDeps();
+		saveModule(uri, factory);
 	};
-
-	window.depMap = depMap;
 
 	global.define.cmd = {};
 
