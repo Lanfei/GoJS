@@ -54,8 +54,7 @@
 		base,
 		uriMap = {},
 		scripts = document.scripts,
-		goScript = scripts[scripts.length - 1],
-		dataset = goScript.dataset;
+		goScript = scripts[scripts.length - 1];
 
 	// config function
 	gojs.config = function(data) {
@@ -105,23 +104,12 @@
 		});
 	};
 
-	// read dataset in old browers
-	if (dataset === undefined) {
-		dataset = {};
-		var attrs = goScript.attributes;
-		for (var i = 0, l = attrs.length; i < l; ++i) {
-			var item = attrs[i],
-				nodeName = item.nodeName,
-				nodeValue = item.nodeValue;
-
-			if (nodeName.indexOf('data-') === 0) {
-				dataset[nodeName.replace('data-', '')] = nodeValue;
-			}
-		}
-	}
-
 	// save config in dataset
-	gojs.config(dataset);
+	gojs.config({
+		base: goScript.getAttribute('data-base'),
+		main: goScript.getAttribute('data-main'),
+		debug: goScript.getAttribute('data-debug') === 'true'
+	});
 
 	// Loader
 	var moduleMap = {},
@@ -315,10 +303,10 @@
 	function requireFactory(uri) {
 
 		// the require function
-		var require = function(id) {
+		function require(id) {
 			var uri = id2Uri(id, uri);
 			return moduleMap[uri].exports;
-		};
+		}
 
 		// convert ID to URI according to current script
 		require.resolve = function(id) {
