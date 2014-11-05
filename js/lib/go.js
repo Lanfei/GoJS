@@ -1,5 +1,5 @@
 /**
- * GoJS 1.2.1
+ * GoJS 1.2.2
  * https://github.com/Lanfei/GoJS
  * A JavaScript module loader following CMD standard
  * [Common Module Definition](https://github.com/cmdjs/specification/blob/master/draft/module.md)
@@ -13,7 +13,7 @@
 	}
 
 	var gojs = global.gojs = {
-		version: '1.2.1'
+		version: '1.2.2'
 	};
 
 	// Path
@@ -47,6 +47,7 @@
 			map: {},
 			base: '',
 			main: '',
+			preload: [],
 			debug: false,
 			charset: 'utf-8'
 		},
@@ -99,7 +100,9 @@
 				main: main
 			});
 		}
-		loadModule(id2Uri(config.main, absSrc(goScript)));
+		async(config.preload, function() {
+			loadModule(id2Uri(config.main, absSrc(goScript)));
+		});
 	};
 
 	// read dataset in old browers
@@ -181,7 +184,9 @@
 		} else if (uri.indexOf('//') === 0) {
 			uri = document.location.protocol + uri;
 		}
-		if (!/\.js($|\?)/.test(uri)) {
+		if (uri.slice(-1) === '#') {
+			uri = uri.substring(0, uri.length - 1);
+		} else if (!/\.js($|\?)/.test(uri)) {
 			uri += '.js';
 		}
 		return uri;
@@ -260,16 +265,50 @@
 					script.onload = script.onreadystatechange = null;
 					head.removeChild(script);
 					script = null;
-				}
-				currentScript = '';
-				if (syncQueue.length) {
-					loadModule(syncQueue.shift());
+					currentScript = '';
+					// modules not in CMD standard
+					if (module.exports === null) {
+						emitload(module);
+					}
+					// sync
+					if (syncQueue.length) {
+						loadModule(syncQueue.shift());
+					}
 				}
 			};
 			head.insertBefore(script, head.firstChild);
 		});
 
 		return module;
+	}
+
+	// load module in async mode
+	function async(ids, callback, referer) {
+		var deps = [],
+			depUri, depModule;
+
+		if (typeof ids == 'string') {
+			ids = [ids];
+		}
+
+		callback._deps = deps;
+		callback._remains = ids.length;
+
+		// load dependencies and update waiting list
+		for (var i = 0, l = ids.length; i < l; ++i) {
+			depUri = id2Uri(ids[i], referer);
+			depModule = loadModule(depUri);
+			if (depModule._remains === undefined) {
+				--module._remains;
+			} else {
+				depModule._waitings.push(callback);
+			}
+			deps.push(depUri);
+		}
+
+		if (callback._remains === 0) {
+			emitCallback(callback);
+		}
 	}
 
 	// a factory to create require function
@@ -286,25 +325,9 @@
 			return id2Uri(id, uri);
 		};
 
-		// load module in async mode
+		// load module in async mode according to current script
 		require.async = function(ids, callback) {
-			var deps = [],
-				depUri, depModule;
-
-			if (typeof ids == 'string') {
-				ids = [ids];
-			}
-
-			callback._deps = deps;
-			callback._remains = ids.length;
-
-			// load dependencies and update waiting map
-			for (var i = 0, l = ids.length; i < l; ++i) {
-				depUri = id2Uri(ids[i], uri);
-				depModule = loadModule(depUri);
-				depModule._waitings.push(callback);
-				deps.push(depUri);
-			}
+			async(ids, callback, uri);
 		};
 
 		return require;
@@ -339,7 +362,6 @@
 			exports = factory(require, module.exports, module);
 			module.exports = exports || module.exports;
 		}
-
 		// notify waiting modules or callbacks
 		for (var i = 0, l = waitings.length; i < l; ++i) {
 			waiting = waitings[i];
@@ -432,5 +454,7 @@
 	if (config.main) {
 		gojs.init();
 	}
+
+	gojs.loadModule = loadModule;
 
 })(this);
