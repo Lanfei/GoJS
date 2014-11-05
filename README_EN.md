@@ -70,11 +70,13 @@ define(function(require, exports, module){
 
 GoJS compatible with all major browsers:
 
->Chrome 3+
->Firefox 2+
->Safari 3.2+
->Opera 9+
->IE 5.5+
+```
+Chrome 3+
+Firefox 2+
+Safari 3.2+
+Opera 9+
+IE 5.5+
+```
 
 In theory, GoJS can be run in any browser.
 

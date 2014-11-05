@@ -70,11 +70,13 @@ define(function(require, exports, module){
 
 GoJS兼容所有主流浏览器：
 
->Chrome 3+
->Firefox 2+
->Safari 3.2+
->Opera 9+
->IE 5.5+
+```
+Chrome 3+
+Firefox 2+
+Safari 3.2+
+Opera 9+
+IE 5.5+
+```
 
 理论上，GoJS可以运行在任何浏览器环境上。
 
