@@ -455,6 +455,4 @@
 		gojs.init();
 	}
 
-	gojs.loadModule = loadModule;
-
 })(this);

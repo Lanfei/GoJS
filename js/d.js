@@ -5,7 +5,7 @@ define(function(require, exports, module){
 			debug('Yeah, I am C \'s friend, D.');
 			require.async('./e', function(e){
 				e.sayHi();
-			})
+			});
 		}
 	};
 });
