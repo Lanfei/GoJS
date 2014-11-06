@@ -7,6 +7,16 @@ GoJS is a JavaScript module loader for web, which can organize your codes and mo
 ###1st Step, Initialize GoJS
 
 ```
+<!--
+data-base: The root path used for all module lookups
+data-main: The entry module
+-->
+<script src="path/to/go.js" data-base="path/to/base/" data-main="main"></script>
+```
+
+You can also use advanced configuration:
+
+```
 <script src="path/to/go.js"></script>
 <script>
 // GoJS config
@@ -44,12 +54,6 @@ gojs.config({
 // Load main module
 gojs.init('main');
 </script>
-```
-
-you can also write in this way:
-
-```
-<script src="path/to/go.js" data-base="path/to/base/" data-main="main"></script>
 ```
 
 ###2nd Step, Write Modules Following [CMD Standard](https://github.com/cmdjs/specification/blob/master/draft/module.md)

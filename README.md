@@ -7,6 +7,16 @@ GoJS是一个适用于Web的JavaScript模块加载器，它可以帮助你更优
 ###第一步，初始化GoJS
 
 ```
+<!--
+data-base: 模块文件的基础路径
+data-main: 入口模块
+-->
+<script src="path/to/go.js" data-base="path/to/base/" data-main="main"></script>
+```
+
+或者使用更高级的配置方式：
+
+```
 <script src="path/to/go.js"></script>
 <script>
 // 配置GoJS
@@ -44,12 +54,6 @@ gojs.config({
 // 加载入口模块
 gojs.init('main');
 </script>
-```
-
-或者通过更简单的方式：
-
-```
-<script src="path/to/go.js" data-base="path/to/base/" data-main="main"></script>
 ```
 
 ###第二步，编写遵循[CMD规范](https://github.com/seajs/seajs/issues/242)的模块
