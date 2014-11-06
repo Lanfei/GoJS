@@ -1,5 +1,5 @@
 /**
- * GoJS 1.2.2
+ * GoJS 1.2.3
  * https://github.com/Lanfei/GoJS
  * A JavaScript module loader following CMD standard
  * [Common Module Definition](https://github.com/cmdjs/specification/blob/master/draft/module.md)
@@ -15,7 +15,7 @@
 	}
 
 	var gojs = global.gojs = {
-		version: '1.2.2'
+		version: '1.2.3'
 	};
 
 	/**
