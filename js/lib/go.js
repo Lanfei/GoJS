@@ -54,7 +54,6 @@
 
 	var config = {
 			base: '',
-			main: '',
 			map: {},
 			vars: {},
 			alias: {},
@@ -105,21 +104,15 @@
 	};
 
 	// Initialize GoJS
-	gojs.init = function(main) {
-		if (main) {
-			gojs.config({
-				main: main
-			});
-		}
+	gojs.init = function(ids, callback) {
 		async(config.preload, function() {
-			loadModule(id2Uri(config.main, absSrc(goScript)));
+			async(ids, callback);
 		});
 	};
 
 	// Save config in dataset
 	gojs.config({
 		base: goScript.getAttribute('data-base'),
-		main: goScript.getAttribute('data-main'),
 		debug: goScript.getAttribute('data-debug') === 'true'
 	});
 
@@ -305,30 +298,36 @@
 
 	// Load module in async mode
 	function async(ids, callback, referer) {
-		var deps = [],
-			depUri, depModule;
 
 		if (typeof ids == 'string') {
 			ids = [ids];
 		}
 
-		callback._deps = deps;
-		callback._remains = ids.length;
+		var deps = [],
+			remains = ids.length,
+			depUri, depModule;
 
 		// Load dependencies and update waiting list
 		for (var i = ids.length - 1; i >= 0; --i) {
 			depUri = id2Uri(ids[i], referer);
 			depModule = loadModule(depUri);
-			if (depModule._remains === undefined) {
-				--module._remains;
-			} else {
-				depModule._waitings.push(callback);
+			if (callback) {
+				if (depModule._remains === undefined) {
+					--remains;
+				} else {
+					depModule._waitings.push(callback);
+				}
+				deps.unshift(depUri);
 			}
-			deps.unshift(depUri);
 		}
 
-		if (callback._remains === 0) {
-			emitCallback(callback);
+
+		if (callback) {
+			callback._deps = deps;
+			callback._remains = ids.length;
+			if (remains === 0) {
+				emitCallback(callback);
+			}
 		}
 	}
 
@@ -337,8 +336,10 @@
 
 		// The require function
 		function require(id) {
-			var uri = id2Uri(id, uri);
-			return moduleMap[uri].exports;
+			var module = moduleMap[id2Uri(id, uri)];
+			if (module) {
+				return module.exports;
+			}
 		}
 
 		// Convert ID to URI according to current script
@@ -472,8 +473,9 @@
 	global.define.cmd = {};
 
 	// Auto initialization
-	if (config.main) {
-		gojs.init();
+	var main = goScript.getAttribute('data-main');
+	if (main) {
+		gojs.init(main);
 	}
 
 })(this);
