@@ -17,12 +17,11 @@
 	};
 
 	// Path
-	var DOT_RE = /\/\.\//g;
-	var MULTI_SLASH_RE = /([^:/])\/+\//g;
-	var DOUBLE_DOT_RE = /\/[^/]+\/\.\.\//;
+	var DOT_RE = /\/\.\//g,
+		MULTI_SLASH_RE = /([^:/])\/+\//g,
+		DOUBLE_DOT_RE = /\/[^/]+\/\.\.\//;
 
-	var PROTOCOL_RE = /^(http:|https:|file:)?\/\//;
-
+	// normalize a pathname
 	function normPath(path) {
 		path = path.replace(DOT_RE, '/');
 
@@ -34,15 +33,19 @@
 		return path;
 	}
 
+	// return the directory name of pathname path
 	function dirname(path) {
 		return path.match(/[^?#]*\//)[0];
 	}
 
+	// return the absolute path of script element
 	function absSrc(script) {
 		return script.hasAttribute ? script.src : script.getAttribute('src', 4);
 	}
 
 	// Config
+	var PROTOCOL_RE = /^(http:|https:|file:)?\/\//;
+
 	var config = {
 			map: {},
 			base: '',
@@ -84,8 +87,8 @@
 			for (var id in idMap) {
 				idList = idMap[id];
 				uriList = [];
-				for (var i = 0, l = idList.length; i < l; ++i) {
-					uriList.push(id2Uri(idList[i]));
+				for (var i = idList.length - 1; i >= 0; --i) {
+					uriList.unshift(id2Uri(idList[i]));
 				}
 				uriMap[id2Uri(id)] = uriList;
 			}
@@ -193,7 +196,7 @@
 	function resolveUriMap(uri) {
 		for (var key in uriMap) {
 			var list = uriMap[key];
-			for (var i = 0, l = list.length; i < l; ++i) {
+			for (var i = list.length - 1; i >= 0; --i) {
 				if (list[i] === uri) {
 					return key;
 				}
@@ -283,7 +286,7 @@
 		callback._remains = ids.length;
 
 		// load dependencies and update waiting list
-		for (var i = 0, l = ids.length; i < l; ++i) {
+		for (var i = ids.length - 1; i >= 0; --i) {
 			depUri = id2Uri(ids[i], referer);
 			depModule = loadModule(depUri);
 			if (depModule._remains === undefined) {
@@ -291,7 +294,7 @@
 			} else {
 				depModule._waitings.push(callback);
 			}
-			deps.push(depUri);
+			deps.unshift(depUri);
 		}
 
 		if (callback._remains === 0) {
@@ -326,8 +329,8 @@
 		var args = [],
 			deps = callback._deps;
 
-		for (var i = 0, l = deps.length; i < l; ++i) {
-			args.push(moduleMap[deps[i]].exports);
+		for (var i = deps.length - 1; i >= 0; --i) {
+			args.unshift(moduleMap[deps[i]].exports);
 		}
 
 		callback.apply(null, args);
@@ -351,7 +354,7 @@
 			module.exports = exports || module.exports;
 		}
 		// notify waiting modules or callbacks
-		for (var i = 0, l = waitings.length; i < l; ++i) {
+		for (var i = waitings.length - 1; i >= 0; --i) {
 			waiting = waitings[i];
 			if (--waiting._remains === 0) {
 				if (typeof waiting === 'function') {
@@ -374,7 +377,7 @@
 			// code = code.replace(/\/\/.*/g, ''),
 			deps = code.match(re) || [];
 
-		for (var i = 0, l = deps.length; i < l; ++i) {
+		for (var i = deps.length - 1; i >= 0; --i) {
 			deps[i] = deps[i].replace(/require\( *[\'\"]([^\'\"]+)[\'\"] *\)/, '$1');
 		}
 
@@ -402,7 +405,7 @@
 
 		// resolve dependencies
 		var depUri, depModule;
-		for (var i = 0, l = deps.length; i < l; ++i) {
+		for (var i = deps.length - 1; i >= 0; --i) {
 			depUri = id2Uri(deps[i], uri);
 			depModule = loadModule(depUri);
 			if (depModule._remains === undefined) {
