@@ -9,27 +9,40 @@ GoJS is a JavaScript module loader for web, which can organize your codes and mo
 ```
 <script src="path/to/go.js"></script>
 <script>
+// GoJS config
 gojs.config({
-	// the base path of module files
+	// The root path used for all module lookups
 	base: 'path/to/base/',
-	// initialization module
-	main: 'main',
-	// a map to search the uri of merged modules
+	// A map used for path conversions
 	map: {
-		// for example, a.js and b.js were merged into a-b.min.js
+		// For example, a.js and b.js were merged into a-b.min.js
 		'a-b.min': ['a', 'b']
 	},
-	// pre-load files
+	// A map used for simplify long module identifications
+	alias: {
+		'jquery': 'http://code.jquery.com/jquery-2.1.1.min.js'
+	},
+	// A map used for simplify long paths
+	paths: {
+		'path': 'this/is/a/long/path'
+	},
+	// In some scenarios, module path may be determined at run time, it can be configured by the vars option
+	vars: {
+		'locale': document.location.hash || 'zh-cn'
+	},
+	// Pre-load files
 	preload: [
-		'http://code.jquery.com/jquery-2.1.1.min.js'
+		'jquery',
+		'./i18n/{locale}'
 	],
-	// if debug is true, GoJS will not use merged files
+	// If debug is true, GoJS will not use the map option
 	debug: false,
-	// the charset of module files
+	// The charset of module files
 	charset: 'utf-8'
 });
 
-gojs.init();
+// Load main module
+gojs.init('main');
 </script>
 ```
 

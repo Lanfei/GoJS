@@ -47,9 +47,12 @@
 	var PROTOCOL_RE = /^(http:|https:|file:)?\/\//;
 
 	var config = {
-			map: {},
 			base: '',
 			main: '',
+			map: {},
+			vars: {},
+			alias: {},
+			paths: {},
 			preload: [],
 			debug: false,
 			charset: 'utf-8'
@@ -167,11 +170,30 @@
 
 	// convert ID to URI based on referer
 	function id2Uri(id, referer) {
-		var uri = id;
-		if (referer && id.indexOf('.') === 0) {
-			uri = normPath(dirname(referer) + id);
-		} else if (!PROTOCOL_RE.test(id)) {
-			uri = normPath(base + id);
+		var uri = config.alias[id] || id,
+			paths = config.paths,
+			vars = config.vars,
+			key;
+
+		// parse paths
+		for (key in paths) {
+			if (uri.indexOf(key + '/') === 0) {
+				uri = uri.replace(key, paths[key]);
+				break;
+			}
+		}
+
+		// parse vars
+		for (key in vars) {
+			if (uri.indexOf('{' + key + '}') >= 0) {
+				uri = uri.replace('{' + key + '}', vars[key]);
+			}
+		}
+
+		if (referer && uri.indexOf('.') === 0) {
+			uri = normPath(dirname(referer) + uri);
+		} else if (!PROTOCOL_RE.test(uri)) {
+			uri = normPath(base + uri);
 		} else if (uri.indexOf('//') === 0) {
 			uri = document.location.protocol + uri;
 		}

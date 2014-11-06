@@ -9,31 +9,44 @@ GoJS是一个适用于Web的JavaScript模块加载器，它可以帮助你更优
 ```
 <script src="path/to/go.js"></script>
 <script>
+// 配置GoJS
 gojs.config({
 	// 模块文件的基础路径
 	base: 'path/to/base/',
-	// 入口模块
-	main: 'main',
-	// 映射表，用于查找合并模块的真实路径
+	// 模块路径映射表，用于调试或压缩合并的路径转换
 	map: {
 		// 如a.js与b.js合并压缩为a-b.min.js
 		'a-b.min': ['a', 'b']
 	},
-	// 预加载的文件或模块
+	// 用于简化较长的模块标识
+	alias: {
+		'jquery': 'http://code.jquery.com/jquery-2.1.1.min.js'
+	},
+	// 用于简化较长的模块目录
+	paths: {
+		'path': 'this/is/a/long/path'
+	},
+	// 某些场景下，模块路径在运行时才能确定，这时可以通过 vars 选项来配置
+	vars: {
+		'locale': document.location.hash || 'zh-cn'
+	},
+	// 需要预加载的文件或模块
 	preload: [
-		'http://code.jquery.com/jquery-2.1.1.min.js'
+		'jquery',
+		'./i18n/{locale}'
 	],
 	// 是否为调试模式，调试模式将不使用合并模块文件
 	debug: false,
-	// 模块的编码
+	// 模块文件的编码
 	charset: 'utf-8'
 });
 
-gojs.init();
+// 加载入口模块
+gojs.init('main');
 </script>
 ```
 
-或者
+或者通过更简单的方式：
 
 ```
 <script src="path/to/go.js" data-base="path/to/base/" data-main="main"></script>
