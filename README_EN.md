@@ -26,7 +26,7 @@ gojs.config({
 	paths: {
 		'path': 'this/is/a/long/path'
 	},
-	// In some scenarios, module path may be determined at run time, it can be configured by the vars option
+	// In some scenarios, module path may be determined during run time, it can be configured by the vars option
 	vars: {
 		'locale': document.location.hash || 'zh-cn'
 	},
