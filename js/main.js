@@ -1,7 +1,7 @@
 gojs.config({
 	// debug: true,
 	map: {
-		'ef.min': ['e', 'f']
+		'e-f.min': ['e', 'f']
 	}
 });
 

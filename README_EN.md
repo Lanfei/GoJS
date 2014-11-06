@@ -1,6 +1,6 @@
 #GoJS
 
-GoJS is a JavaScript module loader for web, which can organize your codes and modules in a elegant way. It solves module dependence problems and naming conflicts, but also solves the difficulty in merging compaction beside similar frameworks, so you can be more pleasure to enjoy the fun of coding.
+GoJS is a JavaScript module loader for web, which can organize your codes and modules in a elegant way. It solves problem of module dependencies and naming conflicts, but also solves the difficulty in merging compaction beside similar frameworks, so you can make your coding more enjoyable.
 
 ##Usage
 
