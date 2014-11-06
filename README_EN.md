@@ -39,7 +39,7 @@ you can also write in this way:
 <script src="path/to/go.js" data-base="path/to/base/" data-main="main"></script>
 ```
 
-###2nd Step, Write Modules following [CMD Standard](https://github.com/cmdjs/specification/blob/master/draft/module.md)
+###2nd Step, Write Modules Following [CMD Standard](https://github.com/cmdjs/specification/blob/master/draft/module.md)
 
 ```
 // main.js

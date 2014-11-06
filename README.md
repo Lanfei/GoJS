@@ -39,7 +39,7 @@ gojs.init();
 <script src="path/to/go.js" data-base="path/to/base/" data-main="main"></script>
 ```
 
-###第二步，编写符合[CMD规范](https://github.com/seajs/seajs/issues/242)的模块
+###第二步，编写遵循[CMD规范](https://github.com/seajs/seajs/issues/242)的模块
 
 ```
 // main.js
