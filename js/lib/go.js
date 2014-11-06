@@ -95,7 +95,7 @@
 		}
 	};
 
-	// init GoJS
+	// initialize GoJS
 	gojs.init = function(main) {
 		if (main) {
 			gojs.config({
@@ -209,7 +209,7 @@
 	function loadModule(uri) {
 		var module = moduleMap[uri];
 
-		// init module
+		// initialize module
 		if (module === undefined) {
 			module = moduleMap[uri] = {
 				id: uri2Id(uri),
