@@ -7,7 +7,9 @@
 
 (function(global, undefined) {
 
-	// GoJS
+	/**
+	 * GoJS
+	 */
 	if (global.gojs) {
 		return;
 	}
@@ -16,12 +18,14 @@
 		version: '1.2.2'
 	};
 
-	// Path
+	/**
+	 * Path
+	 */
 	var DOT_RE = /\/\.\//g,
 		MULTI_SLASH_RE = /([^:/])\/+\//g,
 		DOUBLE_DOT_RE = /\/[^/]+\/\.\.\//;
 
-	// normalize a pathname
+	// Normalize a pathname
 	function normPath(path) {
 		path = path.replace(DOT_RE, '/');
 
@@ -33,17 +37,19 @@
 		return path;
 	}
 
-	// return the directory name of pathname path
+	// Return the directory name of pathname path
 	function dirname(path) {
 		return path.match(/[^?#]*\//)[0];
 	}
 
-	// return the absolute path of script element
+	// Return the absolute path of script element
 	function absSrc(script) {
 		return script.hasAttribute ? script.src : script.getAttribute('src', 4);
 	}
 
-	// Config
+	/**
+	 * Config
+	 */
 	var PROTOCOL_RE = /^(http:|https:|file:)?\/\//;
 
 	var config = {
@@ -62,7 +68,7 @@
 		scripts = document.scripts,
 		goScript = scripts[scripts.length - 1];
 
-	// config function
+	// Config function
 	gojs.config = function(data) {
 		if (data === undefined) {
 			return config;
@@ -72,7 +78,7 @@
 			config[key] = data[key] || config[key];
 		}
 
-		// normalize base option
+		// Normalize base option
 		base = config.base;
 		if (!PROTOCOL_RE.test(base)) {
 			base = dirname(document.location.href) + base;
@@ -83,7 +89,7 @@
 			base += '/';
 		}
 
-		// normalize map option
+		// Normalize map option
 		if (!config.debug) {
 			var idList, uriList,
 				idMap = config.map;
@@ -98,7 +104,7 @@
 		}
 	};
 
-	// initialize GoJS
+	// Initialize GoJS
 	gojs.init = function(main) {
 		if (main) {
 			gojs.config({
@@ -110,14 +116,16 @@
 		});
 	};
 
-	// save config in dataset
+	// Save config in dataset
 	gojs.config({
 		base: goScript.getAttribute('data-base'),
 		main: goScript.getAttribute('data-main'),
 		debug: goScript.getAttribute('data-debug') === 'true'
 	});
 
-	// Loader
+	/**
+	 * Loader
+	 */
 	var moduleMap = {},
 		loadedMap = {},
 		syncQueue = [],
@@ -125,7 +133,7 @@
 		currentScript = '',
 		head = document.head || document.getElementsByTagName('head')[0];
 
-	// get the url of defining script
+	// Return the url of defining script
 	function getCurrentScript() {
 
 		// Chrome
@@ -162,20 +170,20 @@
 			}
 		}
 
-		// use sync mode if current script is unable to get
+		// Use sync mode if current script is unable to get
 		isSync = true;
 
 		return currentScript;
 	}
 
-	// convert ID to URI based on referer
+	// Convert ID to URI based on referer
 	function id2Uri(id, referer) {
 		var uri = config.alias[id] || id,
 			paths = config.paths,
 			vars = config.vars,
 			key;
 
-		// parse paths
+		// Parse paths
 		for (key in paths) {
 			if (uri.indexOf(key + '/') === 0) {
 				uri = uri.replace(key, paths[key]);
@@ -183,7 +191,7 @@
 			}
 		}
 
-		// parse vars
+		// Parse vars
 		for (key in vars) {
 			if (uri.indexOf('{' + key + '}') >= 0) {
 				uri = uri.replace('{' + key + '}', vars[key]);
@@ -205,7 +213,7 @@
 		return uri;
 	}
 
-	// convert URI to ID
+	// Convert URI to ID
 	function uri2Id(uri) {
 		var id = uri.replace(base, '');
 		if (id.slice(-3) === '.js') {
@@ -214,8 +222,8 @@
 		return id;
 	}
 
-	// search the uri of merged modules
-	function resolveUriMap(uri) {
+	// Parse the mapping uri
+	function parseMap(uri) {
 		for (var key in uriMap) {
 			var list = uriMap[key];
 			for (var i = list.length - 1; i >= 0; --i) {
@@ -227,11 +235,11 @@
 		return uri;
 	}
 
-	// load module by uri
+	// Load module by uri
 	function loadModule(uri) {
 		var module = moduleMap[uri];
 
-		// initialize module
+		// Initialize module
 		if (module === undefined) {
 			module = moduleMap[uri] = {
 				id: uri2Id(uri),
@@ -244,18 +252,18 @@
 			};
 		}
 
-		// get the uri of merged modules
+		// Get the mapping uri
 		if (!config.debug) {
-			uri = resolveUriMap(uri);
+			uri = parseMap(uri);
 		}
 
-		// sync mode
+		// Sync mode
 		if (getCurrentScript() && isSync) {
 			syncQueue.push(uri);
 			return module;
 		}
 
-		// prevent multiple loading
+		// Prevent multiple loading
 		if (loadedMap[uri]) {
 			if (syncQueue.length) {
 				loadModule(syncQueue.shift());
@@ -264,14 +272,14 @@
 		}
 		loadedMap[uri] = true;
 
-		// create script element
+		// Create script element
 		var script;
 		script = document.createElement('script');
 		script.src = currentScript = uri;
 		script.charset = config.charset;
 		script.async = true;
 
-		// setTimeout: IE6
+		// Use setTimeout for compatible with IE6
 		setTimeout(function() {
 			script.onload = script.onreadystatechange = function() {
 				if (!script.readyState || /loaded|complete/.test(script.readyState)) {
@@ -279,11 +287,11 @@
 					head.removeChild(script);
 					script = null;
 					currentScript = '';
-					// modules not in CMD standard
+					// Modules not in CMD standard
 					if (module.exports === null) {
 						emitload(module);
 					}
-					// sync
+					// Sync
 					if (syncQueue.length) {
 						loadModule(syncQueue.shift());
 					}
@@ -295,7 +303,7 @@
 		return module;
 	}
 
-	// load module in async mode
+	// Load module in async mode
 	function async(ids, callback, referer) {
 		var deps = [],
 			depUri, depModule;
@@ -307,7 +315,7 @@
 		callback._deps = deps;
 		callback._remains = ids.length;
 
-		// load dependencies and update waiting list
+		// Load dependencies and update waiting list
 		for (var i = ids.length - 1; i >= 0; --i) {
 			depUri = id2Uri(ids[i], referer);
 			depModule = loadModule(depUri);
@@ -324,21 +332,21 @@
 		}
 	}
 
-	// a factory to create require function
+	// A factory to create require function
 	function requireFactory(uri) {
 
-		// the require function
+		// The require function
 		function require(id) {
 			var uri = id2Uri(id, uri);
 			return moduleMap[uri].exports;
 		}
 
-		// convert ID to URI according to current script
+		// Convert ID to URI according to current script
 		require.resolve = function(id) {
 			return id2Uri(id, uri);
 		};
 
-		// load module in async mode according to current script
+		// Load module in async mode according to current script
 		require.async = function(ids, callback) {
 			async(ids, callback, uri);
 		};
@@ -346,7 +354,7 @@
 		return require;
 	}
 
-	// call this function when callback's dependencies are loaded
+	// Call this function when callback's dependencies are loaded
 	function emitCallback(callback) {
 		var args = [],
 			deps = callback._deps;
@@ -357,25 +365,25 @@
 
 		callback.apply(null, args);
 
-		// reduce memory
+		// Reduce memory
 		delete callback._deps;
 		delete callback._remains;
 	}
 
-	// call this function when module is loaded
+	// Call this function when module is loaded
 	function emitload(module) {
 		var uri = module.uri,
 			factory = module.factory,
 			waitings = module._waitings,
 			require, exports, waiting;
 
-		// save exports if factory is a function
+		// Save exports if factory is a function
 		if (typeof factory === 'function') {
 			require = requireFactory(uri);
 			exports = factory(require, module.exports, module);
 			module.exports = exports || module.exports;
 		}
-		// notify waiting modules or callbacks
+		// Notify waiting modules or callbacks
 		for (var i = waitings.length - 1; i >= 0; --i) {
 			waiting = waitings[i];
 			if (--waiting._remains === 0) {
@@ -387,12 +395,12 @@
 			}
 		}
 
-		// reduce memory
+		// Reduce memory
 		delete module._waitings;
 		delete module._remains;
 	}
 
-	// parse the dependencies in factory
+	// Parse the dependencies in factory
 	function parseDeps(factory) {
 		var re = /(^|\b)(?!_)require\( *[\'\"][^\'\"]+[\'\"] *\)/g,
 			code = factory.toString(),
@@ -406,12 +414,12 @@
 		return deps;
 	}
 
-	// save module and resolve dependencies
+	// Save module and resolve dependencies
 	function saveModule(uri, factory) {
 		var module = moduleMap[uri],
 			exports, deps;
 
-		// update module
+		// Update module
 		if (typeof factory === 'function') {
 			exports = {};
 			deps = parseDeps(factory);
@@ -425,7 +433,7 @@
 		module.dependencies = deps;
 		module._remains = deps.length;
 
-		// resolve dependencies
+		// Resolve dependencies
 		var depUri, depModule;
 		for (var i = deps.length - 1; i >= 0; --i) {
 			depUri = id2Uri(deps[i], uri);
@@ -442,11 +450,11 @@
 		}
 	}
 
-	// define a module
+	// Define a module
 	global.define = function(factory) {
 		var uri = getCurrentScript();
 
-		// correct the uri of merged modules
+		// Correct the uri of merged modules
 		if (!config.debug) {
 			var index,
 				list = uriMap[uri];
@@ -460,10 +468,10 @@
 		saveModule(uri, factory);
 	};
 
-	// an empty object to determine if a CMD loader exists
+	// An empty object to determine if a CMD loader exists
 	global.define.cmd = {};
 
-	// auto initialization
+	// Auto initialization
 	if (config.main) {
 		gojs.init();
 	}
