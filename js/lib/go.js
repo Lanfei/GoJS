@@ -403,14 +403,13 @@
 
 	// Parse the dependencies in factory
 	function parseDeps(factory) {
-		var re = /(^|\b)(?!_)require\( *[\'\"][^\'\"]+[\'\"] *\)/g,
+		var re = /(?:^|\b)require\( *[\'\"]([^\'\"]+)[\'\"] *\)/g,
 			code = factory.toString(),
-			// code = code.replace(/\/\/.*/g, ''),
-			deps = code.match(re) || [];
+			deps = [];
 
-		for (var i = deps.length - 1; i >= 0; --i) {
-			deps[i] = deps[i].replace(/require\( *[\'\"]([^\'\"]+)[\'\"] *\)/, '$1');
-		}
+		code.replace(re, function(_, $1){
+			deps.push($1);
+		});
 
 		return deps;
 	}
