@@ -403,7 +403,7 @@
 
 	// Parse the dependencies in factory
 	function parseDeps(factory) {
-		var re = /(?:[^\$\w])require\( *[\'\"]([^\'\"]+)[\'\"] *\)/g,
+		var re = /(?:[^\$\w\.])require\( *['"]([^'"]+)['"] *\)/g,
 			code = factory.toString(),
 			deps = [];
 
