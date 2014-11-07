@@ -403,7 +403,7 @@
 
 	// Parse the dependencies in factory
 	function parseDeps(factory) {
-		var re = /(?:^|\b)require\( *[\'\"]([^\'\"]+)[\'\"] *\)/g,
+		var re = /(?:[^\$\w])require\( *[\'\"]([^\'\"]+)[\'\"] *\)/g,
 			code = factory.toString(),
 			deps = [];
 
@@ -470,6 +470,8 @@
 
 	// An empty object to determine if a CMD loader exists
 	global.define.cmd = {};
+
+	gojs.cache = moduleMap;
 
 	// Auto initialization
 	var main = goScript.getAttribute('data-main');
