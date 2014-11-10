@@ -107,7 +107,7 @@
 	// Initialize GoJS
 	gojs.init = function(ids, callback) {
 		async(config.preload, function() {
-			async(ids, callback, location.href);
+			async(ids, callback);
 		});
 	};
 
