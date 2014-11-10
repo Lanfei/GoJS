@@ -80,9 +80,9 @@
 		// Normalize base option
 		base = config.base;
 		if (!PROTOCOL_RE.test(base)) {
-			base = dirname(document.location.href) + base;
+			base = dirname(location.href) + base;
 		} else if (base.indexOf('//') === 0) {
-			base = document.location.protocol + base;
+			base = location.protocol + base;
 		}
 		if (base.slice(-1) !== '/') {
 			base += '/';
@@ -193,10 +193,12 @@
 
 		if (referer && uri.indexOf('.') === 0) {
 			uri = normPath(dirname(referer) + uri);
+		} else if (uri.indexOf('//') === 0) {
+			uri = location.protocol + uri;
+		} else if (uri.indexOf('/') === 0) {
+			uri = location.href.replace(/^(.*?\/\/.*?)\/.*/, '$1') + uri;
 		} else if (!PROTOCOL_RE.test(uri)) {
 			uri = normPath(base + uri);
-		} else if (uri.indexOf('//') === 0) {
-			uri = document.location.protocol + uri;
 		}
 		if (uri.slice(-1) === '#') {
 			uri = uri.substring(0, uri.length - 1);
@@ -407,7 +409,7 @@
 			code = factory.toString(),
 			deps = [];
 
-		code.replace(re, function(_, $1){
+		code.replace(re, function(_, $1) {
 			deps.push($1);
 		});
 
