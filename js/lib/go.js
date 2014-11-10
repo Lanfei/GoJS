@@ -1,5 +1,5 @@
 /**
- * GoJS 1.2.3
+ * GoJS 1.2.4
  * https://github.com/Lanfei/GoJS
  * A JavaScript module loader following CMD standard
  * [Common Module Definition](https://github.com/cmdjs/specification/blob/master/draft/module.md)
@@ -15,7 +15,7 @@
 	}
 
 	var gojs = global.gojs = {
-		version: '1.2.3'
+		version: '1.2.4'
 	};
 
 	/**
@@ -62,10 +62,10 @@
 			debug: false,
 			charset: 'utf-8'
 		},
-		base,
 		uriMap = {},
 		scripts = document.scripts,
-		goScript = scripts[scripts.length - 1];
+		gojsNode = document.getElementById('gojsnode') || scripts[scripts.length - 1],
+		gojsSrc = absSrc(gojsNode);
 
 	// Config function
 	gojs.config = function(data) {
@@ -78,7 +78,7 @@
 		}
 
 		// Normalize base option
-		base = config.base;
+		var base = config.base || dirname(gojsSrc);
 		if (!PROTOCOL_RE.test(base)) {
 			base = dirname(location.href) + base;
 		} else if (base.indexOf('//') === 0) {
@@ -87,6 +87,7 @@
 		if (base.slice(-1) !== '/') {
 			base += '/';
 		}
+		config.base = base;
 
 		// Normalize map option
 		if (!config.debug) {
@@ -96,9 +97,9 @@
 				idList = idMap[id];
 				uriList = [];
 				for (var i = idList.length - 1; i >= 0; --i) {
-					uriList.unshift(id2Uri(idList[i]));
+					uriList.unshift(id2Uri(idList[i], gojsSrc));
 				}
-				uriMap[id2Uri(id)] = uriList;
+				uriMap[id2Uri(id, gojsSrc)] = uriList;
 			}
 		}
 	};
@@ -106,14 +107,14 @@
 	// Initialize GoJS
 	gojs.init = function(ids, callback) {
 		async(config.preload, function() {
-			async(ids, callback);
+			async(ids, callback, location.href);
 		});
 	};
 
 	// Save config in dataset
 	gojs.config({
-		base: goScript.getAttribute('data-base'),
-		debug: goScript.getAttribute('data-debug') === 'true'
+		base: gojsNode.getAttribute('data-base'),
+		debug: gojsNode.getAttribute('data-debug') === 'true'
 	});
 
 	/**
@@ -198,11 +199,11 @@
 		} else if (uri.indexOf('/') === 0) {
 			uri = location.href.replace(/^(.*?\/\/.*?)\/.*/, '$1') + uri;
 		} else if (!PROTOCOL_RE.test(uri)) {
-			uri = normPath(base + uri);
+			uri = normPath(config.base + uri);
 		}
 		if (uri.slice(-1) === '#') {
 			uri = uri.substring(0, uri.length - 1);
-		} else if (!/\.js($|\?)/.test(uri)) {
+		} else if (uri.indexOf('?') < 0 && !/(\.js|\/)$/.test(uri)) {
 			uri += '.js';
 		}
 		return uri;
@@ -210,7 +211,7 @@
 
 	// Convert URI to ID
 	function uri2Id(uri) {
-		var id = uri.replace(base, '');
+		var id = uri.replace(config.base, '');
 		if (id.slice(-3) === '.js') {
 			id = id.substring(0, id.length - 3);
 		}
@@ -276,9 +277,9 @@
 
 		// Use setTimeout for compatible with IE6
 		setTimeout(function() {
-			script.onload = script.onreadystatechange = function() {
+			script.onload = script.onerror = script.onreadystatechange = function() {
 				if (!script.readyState || /loaded|complete/.test(script.readyState)) {
-					script.onload = script.onreadystatechange = null;
+					script.onload = script.onerror = script.onreadystatechange = null;
 					head.removeChild(script);
 					script = null;
 					currentScript = '';
@@ -476,7 +477,7 @@
 	gojs.cache = moduleMap;
 
 	// Auto initialization
-	var main = goScript.getAttribute('data-main');
+	var main = gojsNode.getAttribute('data-main');
 	if (main) {
 		gojs.init(main);
 	}

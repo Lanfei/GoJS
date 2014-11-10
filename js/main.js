@@ -1,7 +1,8 @@
 gojs.config({
 	// debug: true,
+	// paths in map are based on the path of gojs
 	map: {
-		'e-f.min': ['e', 'f']
+		'../e-f.min': ['../e', '../f']
 	}
 });
 
