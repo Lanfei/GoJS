@@ -11,7 +11,7 @@ GoJS是一个适用于Web的JavaScript模块加载器，它可以帮助你更优
 data-base: 模块文件的基础路径
 data-main: 入口模块
 -->
-<script src="path/to/go.js" data-base="path/to/base/" data-main="main"></script>
+<script id="gojsnode" src="path/to/go.js" data-base="path/to/base/" data-main="main"></script>
 ```
 
 或者使用更高级的配置方式：

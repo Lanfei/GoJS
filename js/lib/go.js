@@ -64,8 +64,7 @@
 		},
 		uriMap = {},
 		scripts = document.scripts,
-		gojsNode = document.getElementById('gojsnode') || scripts[scripts.length - 1],
-		gojsSrc = absSrc(gojsNode);
+		gojsNode = document.getElementById('gojsnode') || scripts[scripts.length - 1];
 
 	// Config function
 	gojs.config = function(data) {
@@ -78,7 +77,7 @@
 		}
 
 		// Normalize base option
-		var base = config.base || dirname(gojsSrc);
+		var base = config.base;
 		if (!PROTOCOL_RE.test(base)) {
 			base = dirname(location.href) + base;
 		} else if (base.indexOf('//') === 0) {
@@ -89,7 +88,8 @@
 		}
 		config.base = base;
 
-		// Normalize map option
+		// Normalize map option,
+		var gojsSrc = absSrc(gojsNode);
 		if (!config.debug) {
 			var idList, uriList,
 				idMap = config.map;

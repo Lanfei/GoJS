@@ -11,7 +11,7 @@ GoJS is a JavaScript module loader for web, which can organize your codes and mo
 data-base: The root path used for all module lookups
 data-main: The entry module
 -->
-<script src="path/to/go.js" data-base="path/to/base/" data-main="main"></script>
+<script id="gojsnode" src="path/to/go.js" data-base="path/to/base/" data-main="main"></script>
 ```
 
 You can also use advanced configuration:
