@@ -40,9 +40,10 @@ gojs.config({
 	vars: {
 		'locale': document.location.hash || 'zh-cn'
 	},
-	// Pre-load files
+	// Pre-load plugins or modules
 	preload: [
 		'jquery',
+		'./gojs-json',
 		'./i18n/{locale}'
 	],
 	// If debug is true, GoJS will not use the map option

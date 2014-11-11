@@ -5,6 +5,17 @@
 	<title>GoJS</title>
 </head>
 <body>
-	<script id="gojsnode" src="js/lib/go.js" data-base="js" data-main="main"></script>
+	<script id="gojsnode" src="js/lib/go.js"></script>
+	<script>
+	gojs.config({
+		// debug: true,
+		base: 'js',
+		// paths in config are based on the path of gojs
+		map: {
+			'../e-f.min': ['../e', '../f']
+		}
+	});
+	gojs.init('main');
+	</script>
 </body>
 </html>

@@ -40,9 +40,10 @@ gojs.config({
 	vars: {
 		'locale': document.location.hash || 'zh-cn'
 	},
-	// 需要预加载的文件或模块
+	// 需要预加载的插件或模块
 	preload: [
 		'jquery',
+		'./gojs-json',
 		'./i18n/{locale}'
 	],
 	// 是否为调试模式，调试模式将不使用合并模块文件

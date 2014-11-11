@@ -58,13 +58,15 @@
 			vars: {},
 			alias: {},
 			paths: {},
+			loaders: {},
 			preload: [],
 			debug: false,
 			charset: 'utf-8'
 		},
 		uriMap = {},
 		scripts = document.scripts,
-		gojsNode = document.getElementById('gojsnode') || scripts[scripts.length - 1];
+		gojsNode = document.getElementById('gojsnode') || scripts[scripts.length - 1],
+		gojsSrc = absSrc(gojsNode);
 
 	// Config function
 	gojs.config = function(data) {
@@ -89,7 +91,6 @@
 		config.base = base;
 
 		// Normalize map option,
-		var gojsSrc = absSrc(gojsNode);
 		if (!config.debug) {
 			var idList, uriList,
 				idMap = config.map;
@@ -108,7 +109,7 @@
 	gojs.init = function(ids, callback) {
 		async(config.preload, function() {
 			async(ids, callback);
-		});
+		}, gojsSrc);
 	};
 
 	// Save config in dataset
@@ -203,7 +204,7 @@
 		}
 		if (uri.slice(-1) === '#') {
 			uri = uri.substring(0, uri.length - 1);
-		} else if (uri.indexOf('?') < 0 && !/(\.js|\/)$/.test(uri)) {
+		} else if (uri.indexOf('?') < 0 && !/(\.js(on)?|\.css|\/)$/.test(uri)) {
 			uri += '.js';
 		}
 		return uri;
@@ -268,35 +269,54 @@
 		}
 		loadedMap[uri] = true;
 
-		// Create script element
-		var script;
-		script = document.createElement('script');
-		script.src = currentScript = uri;
-		script.charset = config.charset;
-		script.async = true;
+		// To find a matching loader
+		var re,
+			loader = JSLoader,
+			loaders = config.loaders;
+		for (var key in loaders) {
+			re = new RegExp('\\.' + key + '(\\?|$)');
+			if (re.test(uri)) {
+				loader = loaders[key];
+				break;
+			}
+		}
 
+		// Begin to request module
+		currentScript = uri;
 		// Use setTimeout for compatible with IE6
 		setTimeout(function() {
-			script.onload = script.onerror = script.onreadystatechange = function() {
-				if (!script.readyState || /loaded|complete/.test(script.readyState)) {
-					script.onload = script.onerror = script.onreadystatechange = null;
-					head.removeChild(script);
-					script = null;
-					currentScript = '';
-					// Modules not in CMD standard
-					if (module.exports === null) {
-						emitload(module);
-					}
-					// Sync
-					if (syncQueue.length) {
-						loadModule(syncQueue.shift());
-					}
+			loader.call(null, uri, function(exports) {
+				currentScript = '';
+				// Modules not in CMD standard
+				if (module.exports === null) {
+					module.exports = exports || {};
+					emitload(module);
 				}
-			};
-			head.insertBefore(script, head.firstChild);
+				// Sync
+				if (syncQueue.length) {
+					loadModule(syncQueue.shift());
+				}
+			});
 		});
 
 		return module;
+	}
+
+	// Create script element
+	function JSLoader(uri, callback) {
+		var node = document.createElement('script');
+		node.src = uri;
+		node.charset = config.charset;
+		node.async = true;
+		node.onload = node.onerror = node.onreadystatechange = function() {
+			if (!node.readyState || /loaded|complete/.test(node.readyState)) {
+				node.onload = node.onerror = node.onreadystatechange = null;
+				head.removeChild(node);
+				node = null;
+				callback();
+			}
+		};
+		head.insertBefore(node, head.firstChild);
 	}
 
 	// Load module in async mode
