@@ -19,7 +19,7 @@ data-main: 入口模块
 ```
 <script src="path/to/go.js"></script>
 <script>
-// 配置GoJS
+// 配置GoJS（以下参数均为可选）
 gojs.config({
 	// 模块文件的基础路径
 	base: 'path/to/base/',
@@ -40,6 +40,13 @@ gojs.config({
 	vars: {
 		'locale': document.location.hash || 'zh-cn'
 	},
+	// 用于拓展JS模块以外的加载器
+	loaders: [
+		css: function(uri, callback){
+			// ...
+			// callback(exports);
+		}
+	],
 	// 需要预加载的插件或模块
 	preload: [
 		'jquery',

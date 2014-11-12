@@ -19,7 +19,7 @@ You can also use advanced configuration:
 ```
 <script src="path/to/go.js"></script>
 <script>
-// GoJS config
+// GoJS config (the following parameters are optional)
 gojs.config({
 	// The root path used for all module lookups
 	base: 'path/to/base/',
@@ -40,6 +40,13 @@ gojs.config({
 	vars: {
 		'locale': document.location.hash || 'zh-cn'
 	},
+	// For the expansion of other loaders
+	loaders: [
+		css: function(uri, callback){
+			// ...
+			// callback(exports);
+		}
+	],
 	// Pre-load plugins or modules
 	preload: [
 		'jquery',
