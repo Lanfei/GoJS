@@ -74,7 +74,7 @@
 			return config;
 		}
 
-		for (var key in config) {
+		for (var key in data) {
 			config[key] = data[key] || config[key];
 		}
 
