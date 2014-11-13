@@ -1,5 +1,3 @@
-gojs.config();
-
 define(function(require, exports, module) {
 
 	var println = require('../println');

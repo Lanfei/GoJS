@@ -224,19 +224,6 @@
 		return id;
 	}
 
-	// Parse the mapping uri
-	function parseMap(uri) {
-		for (var key in uriMap) {
-			var list = uriMap[key];
-			for (var i = list.length - 1; i >= 0; --i) {
-				if (list[i] === uri) {
-					return key;
-				}
-			}
-		}
-		return uri;
-	}
-
 	// Return a module according to uri parameter
 	function getModuleByUri(uri) {
 		// If the module is not exists, initialize it
@@ -359,13 +346,26 @@
 		// Resolve arguments
 		for (var i = deps.length - 1; i >= 0; --i) {
 			var depUri = id2Uri(deps[i], uri);
-			args.unshift(moduleMap[depUri].exports);
+			args.unshift(getModuleByUri(depUri).exports);
 		}
 
 		callback.apply(null, args);
 
 		// Reduce memory
 		delete callback._remains;
+	}
+
+	// Parse the mapping uri
+	function parseMap(uri) {
+		for (var key in uriMap) {
+			var list = uriMap[key];
+			for (var i = list.length - 1; i >= 0; --i) {
+				if (list[i] === uri) {
+					return key;
+				}
+			}
+		}
+		return uri;
 	}
 
 	// Resolve dependencies
@@ -415,10 +415,7 @@
 
 		// The require function
 		function require(id) {
-			var module = moduleMap[id2Uri(id, uri)];
-			if (module) {
-				return module.exports;
-			}
+			return getModuleByUri(id2Uri(id, uri)).exports;
 		}
 
 		// Convert ID to URI according to current script
