@@ -10271,9 +10271,7 @@ if ( typeof define === "function" ) {
 			return jQuery;
 		});
 	}else if(define.cmd){
-		define( function() {
-			return jQuery;
-		});
+		define( jQuery );
 	}
 }
 

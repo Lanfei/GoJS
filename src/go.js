@@ -48,6 +48,20 @@
 	}
 
 	/**
+	 * Lang
+	 */
+
+	function isType(type) {
+		return function(obj) {
+			return {}.toString.call(obj) === '[object ' + type + ']';
+		};
+	}
+
+	var isObject = isType('Object');
+	var isString = isType('String');
+	var isArray = Array.isArray || isType('Array');
+
+	/**
 	 * Config
 	 */
 	var PROTOCOL_RE = /^(http:|https:|file:)?\/\//;
@@ -70,12 +84,29 @@
 
 	// Config function
 	gojs.config = function(data) {
+
 		if (data === undefined) {
 			return config;
 		}
 
+		// Merge config
 		for (var key in data) {
-			config[key] = data[key] || config[key];
+			var curr = data[key];
+			var prev = config[key];
+
+			if (curr) {
+				if (isArray(curr)) {
+					curr = prev.concat(curr);
+				} else if (isObject(curr)) {
+					for (var k in prev) {
+						if (curr[k] === undefined) {
+							curr[k] = prev[k];
+						}
+					}
+				}
+			}
+
+			config[key] = curr;
 		}
 
 		// Normalize base option
@@ -322,7 +353,7 @@
 	// Load module in async mode
 	function async(ids, callback, referer) {
 
-		if (typeof ids == 'string') {
+		if (isString(ids)) {
 			ids = [ids];
 		}
 

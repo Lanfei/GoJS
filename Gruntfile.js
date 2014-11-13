@@ -8,15 +8,14 @@ module.exports = function(grunt) {
 
 		grunt.initConfig({
 			uglify: {
-				options: {
-					mangle: false
-				},
+				// options: {
+				// 	mangle: false
+				// },
 				default: {
 					files: {
-						'js/lib/go.min.js': 'js/lib/go.js',
-						'js/lib/gojs-css.min.js': 'js/lib/gojs-css.js',
-						'js/lib/gojs-json.min.js': 'js/lib/gojs-json.js',
-						'js/e-f.min.js': ['js/e.js', 'js/f.js']
+						'dist/go.js': 'src/go.js',
+						'dist/gojs-css.js': 'src/gojs-css.js',
+						'dist/gojs-json.js': 'src/gojs-json.js'
 					}
 				}
 			}
