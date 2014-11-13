@@ -5,8 +5,7 @@
  */
 
 (function() {
-	var config = gojs.config(),
-		head = document.head || document.getElementsByTagName('head')[0];
+	var head = document.head || document.getElementsByTagName('head')[0];
 
 	function CSSLoader(uri, callback) {
 		var node = document.createElement('link');
@@ -25,5 +24,9 @@
 		head.insertBefore(node, head.firstChild);
 	}
 
-	config.loaders['css'] = CSSLoader;
+	config.config({
+		loaders: {
+			css: CSSLoader
+		}
+	});
 })();

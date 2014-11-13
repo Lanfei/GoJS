@@ -1,5 +1,5 @@
 /**
- * GoJS 1.2.5
+ * GoJS 1.3.0
  * https://github.com/Lanfei/GoJS
  * A JavaScript module loader following CMD standard
  * [Common Module Definition](https://github.com/cmdjs/specification/blob/master/draft/module.md)
@@ -15,7 +15,7 @@
 	}
 
 	var gojs = global.gojs = {
-		version: '1.2.5'
+		version: '1.3.0'
 	};
 
 	/**
@@ -59,6 +59,7 @@
 
 	var isObject = isType('Object');
 	var isString = isType('String');
+	var isFunction = isType('Function');
 	var isArray = Array.isArray || isType('Array');
 
 	/**
@@ -121,7 +122,7 @@
 		}
 		config.base = base;
 
-		// Normalize map option,
+		// Normalize map option
 		if (!config.debug) {
 			var idList, uriList,
 				idMap = config.map;
@@ -139,7 +140,7 @@
 	// Initialize GoJS
 	gojs.init = function(ids, callback) {
 		async(config.preload, function() {
-			async(ids, callback);
+			async(ids, callback || function() {});
 		}, gojsSrc);
 	};
 
@@ -154,38 +155,15 @@
 	 */
 	var moduleMap = {},
 		loadedMap = {},
-		syncQueue = [],
-		isSync = false,
-		currentScript = '',
+		currentFactorys = [],
 		head = document.head || document.getElementsByTagName('head')[0];
 
-	// Return the url of defining script
+	// Return the url of the current script
 	function getCurrentScript() {
 
 		// Chrome
 		if (document.currentScript) {
 			return absSrc(document.currentScript);
-		}
-
-		// Safari, etc.
-		if (isSync) {
-			return currentScript;
-		}
-
-		// Opera 9, etc.
-		try {
-			throwAnError();
-		} catch (e) {
-			var stack = e.stack;
-			// Opera 9 or lower
-			if (e.stacktrace) {
-				stack = e.toString();
-			}
-			if (stack) {
-				var reg = /(http|https|file):\/\/[^ ]+\.js/g;
-				var matches = stack.match(reg);
-				return matches.pop();
-			}
 		}
 
 		// IE 6-9
@@ -196,10 +174,6 @@
 			}
 		}
 
-		// Use sync mode if current script is unable to get
-		isSync = true;
-
-		return currentScript;
 	}
 
 	// Convert ID to URI based on referer
@@ -263,39 +237,34 @@
 		return uri;
 	}
 
+	// Return a module according to uri parameter
+	function getModuleByUri(uri) {
+		// If the module is not exists, initialize it
+		moduleMap[uri] = moduleMap[uri] || {
+			id: uri2Id(uri),
+			uri: uri,
+			factory: null,
+			exports: null,
+			dependencies: [],
+			// Who depends on me
+			_waitings: [],
+			// The number of unloaded dependencies
+			_remains: 0
+		};
+		return moduleMap[uri];
+	}
+
 	// Load module by uri
 	function loadModule(uri) {
-		var module = moduleMap[uri];
-
-		// Initialize module
-		if (module === undefined) {
-			module = moduleMap[uri] = {
-				id: uri2Id(uri),
-				uri: uri,
-				factory: null,
-				exports: null,
-				dependencies: null,
-				_waitings: [],
-				_remains: 0
-			};
-		}
+		var module = getModuleByUri(uri);
 
 		// Get the mapping uri
 		if (!config.debug) {
 			uri = parseMap(uri);
 		}
 
-		// Sync mode
-		if (getCurrentScript() && isSync) {
-			syncQueue.push(uri);
-			return module;
-		}
-
 		// Prevent multiple loading
 		if (loadedMap[uri]) {
-			if (syncQueue.length) {
-				loadModule(syncQueue.shift());
-			}
 			return module;
 		}
 		loadedMap[uri] = true;
@@ -312,22 +281,16 @@
 			}
 		}
 
-		// Begin to request module
-		currentScript = uri;
-		// Use setTimeout for compatible with IE6
-		setTimeout(function() {
-			loader.call(null, uri, function(exports) {
-				currentScript = '';
-				// Modules not in CMD standard
-				if (module.exports === null) {
-					module.exports = exports || {};
-					emitload(module);
-				}
-				// Sync
-				if (syncQueue.length) {
-					loadModule(syncQueue.shift());
-				}
-			});
+		// begin to load the module
+		loader.call(null, uri, function(exports) {
+			// Save loader's exports
+			if (exports) {
+				module.exports = exports;
+			}
+			// Modules not in CMD standard
+			if (module.waitings && module.exports === null) {
+				emitLoad(module);
+			}
 		});
 
 		return module;
@@ -341,13 +304,97 @@
 		node.async = true;
 		node.onload = node.onerror = node.onreadystatechange = function() {
 			if (!node.readyState || /loaded|complete/.test(node.readyState)) {
+				// Save modules if currentScript is unable to get
+				for (var i = 0, l = currentFactorys.length; i < l; ++i) {
+					saveModule(uri, currentFactorys[i]);
+				}
+				currentFactorys = [];
+
+				// Ensure only run once and handle memory leak in IE
 				node.onload = node.onerror = node.onreadystatechange = null;
 				head.removeChild(node);
 				node = null;
+
 				callback();
 			}
 		};
 		head.insertBefore(node, head.firstChild);
+	}
+
+	// Call this function when module is loaded
+	function emitLoad(module) {
+		var factory = module.factory,
+			waitings = module._waitings;
+
+		// Save exports if factory is a function
+		if (typeof factory === 'function') {
+			var require = requireFactory(module.uri);
+			var exports = factory(require, module.exports, module);
+			module.exports = exports || module.exports;
+		}
+
+		// Notify waiting modules or callbacks
+		for (var i = waitings.length - 1; i >= 0; --i) {
+			var waiting = waitings[i];
+			if (--waiting._remains === 0) {
+				if (typeof waiting === 'function') {
+					emitCallback(waiting);
+				} else {
+					emitLoad(waiting);
+				}
+			}
+		}
+
+		// Reduce memory
+		delete module._waitings;
+		delete module._remains;
+	}
+
+	// Call this function when callback's dependencies are loaded
+	function emitCallback(callback) {
+		var args = [],
+			uri = callback.uri,
+			deps = callback.dependencies;
+
+		// Resolve arguments
+		for (var i = deps.length - 1; i >= 0; --i) {
+			var depUri = id2Uri(deps[i], uri);
+			args.unshift(moduleMap[depUri].exports);
+		}
+
+		callback.apply(null, args);
+
+		// Reduce memory
+		delete callback._remains;
+	}
+
+	// Resolve dependencies
+	function resolveDeps(waiting) {
+		var deps = waiting.dependencies,
+			uri = waiting.uri;
+
+		waiting._remains = deps.length;
+
+		// check if the dependence is loaded
+		for (var i = deps.length - 1; i >= 0; --i) {
+			var depUri = id2Uri(deps[i], uri);
+			var depModule = loadModule(depUri);
+
+			if (depModule._remains === undefined) {
+				--waiting._remains;
+			} else {
+				depModule._waitings.push(waiting);
+			}
+		}
+
+		// If all the dependencies are loaded
+		if (waiting._remains === 0) {
+			if (isFunction(waiting)) {
+				emitCallback(waiting);
+			} else {
+				emitLoad(waiting);
+			}
+		}
 	}
 
 	// Load module in async mode
@@ -357,32 +404,10 @@
 			ids = [ids];
 		}
 
-		var deps = [],
-			remains = ids.length,
-			depUri, depModule;
+		callback.dependencies = ids;
+		callback.uri = referer;
 
-		// Load dependencies and update waiting list
-		for (var i = ids.length - 1; i >= 0; --i) {
-			depUri = id2Uri(ids[i], referer);
-			depModule = loadModule(depUri);
-			if (callback) {
-				if (depModule._remains === undefined) {
-					--remains;
-				} else {
-					depModule._waitings.push(callback);
-				}
-				deps.unshift(depUri);
-			}
-		}
-
-
-		if (callback) {
-			callback._deps = deps;
-			callback._remains = ids.length;
-			if (remains === 0) {
-				emitCallback(callback);
-			}
-		}
+		resolveDeps(callback);
 	}
 
 	// A factory to create require function
@@ -409,52 +434,6 @@
 		return require;
 	}
 
-	// Call this function when callback's dependencies are loaded
-	function emitCallback(callback) {
-		var args = [],
-			deps = callback._deps;
-
-		for (var i = deps.length - 1; i >= 0; --i) {
-			args.unshift(moduleMap[deps[i]].exports);
-		}
-
-		callback.apply(null, args);
-
-		// Reduce memory
-		delete callback._deps;
-		delete callback._remains;
-	}
-
-	// Call this function when module is loaded
-	function emitload(module) {
-		var uri = module.uri,
-			factory = module.factory,
-			waitings = module._waitings,
-			require, exports, waiting;
-
-		// Save exports if factory is a function
-		if (typeof factory === 'function') {
-			require = requireFactory(uri);
-			exports = factory(require, module.exports, module);
-			module.exports = exports || module.exports;
-		}
-		// Notify waiting modules or callbacks
-		for (var i = waitings.length - 1; i >= 0; --i) {
-			waiting = waitings[i];
-			if (--waiting._remains === 0) {
-				if (typeof waiting === 'function') {
-					emitCallback(waiting);
-				} else {
-					emitload(waiting);
-				}
-			}
-		}
-
-		// Reduce memory
-		delete module._waitings;
-		delete module._remains;
-	}
-
 	// Parse the dependencies in factory
 	function parseDeps(factory) {
 		var re = /(?:[^\$\w\.])require\( *['"]([^'"]+)['"] *\)/g,
@@ -468,47 +447,10 @@
 		return deps;
 	}
 
-	// Save module and resolve dependencies
+	// Save a module
 	function saveModule(uri, factory) {
-		var module = moduleMap[uri],
-			exports, deps;
 
-		// Update module
-		if (typeof factory === 'function') {
-			exports = {};
-			deps = parseDeps(factory);
-		} else {
-			exports = factory;
-			deps = [];
-		}
-
-		module.factory = factory;
-		module.exports = exports;
-		module.dependencies = deps;
-		module._remains = deps.length;
-
-		// Resolve dependencies
-		var depUri, depModule;
-		for (var i = deps.length - 1; i >= 0; --i) {
-			depUri = id2Uri(deps[i], uri);
-			depModule = loadModule(depUri);
-			if (depModule._remains === undefined) {
-				--module._remains;
-			} else {
-				depModule._waitings.push(module);
-			}
-		}
-
-		if (module._remains === 0) {
-			emitload(module);
-		}
-	}
-
-	// Define a module
-	global.define = function(factory) {
-		var uri = getCurrentScript();
-
-		// Correct the uri of merged modules
+		// Reduce the mapping uri
 		if (!config.debug) {
 			var index,
 				list = uriMap[uri];
@@ -519,12 +461,37 @@
 			}
 		}
 
-		saveModule(uri, factory);
+		// Save the module
+		var module = getModuleByUri(uri);
+		module.factory = factory;
+
+		if (typeof factory === 'function') {
+			module.exports = {};
+			module.dependencies = parseDeps(factory);
+		} else {
+			module.exports = factory;
+		}
+
+		resolveDeps(module);
+	}
+
+	// Define a module
+	global.define = function(factory) {
+		var currentScript = getCurrentScript();
+
+		if (currentScript) {
+			// Save the module if currentScript is able to get
+			saveModule(currentScript, factory);
+		} else {
+			// Save the module in script's onload event
+			currentFactorys.push(factory);
+		}
 	};
 
 	// An empty object to determine if a CMD loader exists
 	global.define.cmd = {};
 
+	// For developer
 	gojs.cache = moduleMap;
 
 	// Auto initialization

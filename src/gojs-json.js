@@ -5,7 +5,6 @@
  */
 
 (function() {
-	var config = gojs.config();
 
 	function createStandardXHR() {
 		try {
@@ -41,5 +40,9 @@
 		xhr.send();
 	}
 
-	config.loaders['json'] = JSONLoader;
+	config.config({
+		loaders: {
+			css: JSONLoader
+		}
+	});
 })();
