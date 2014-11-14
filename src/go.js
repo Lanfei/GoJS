@@ -78,21 +78,20 @@
 			debug: false,
 			charset: 'utf-8'
 		},
-		uriMap = {},
 		scripts = document.scripts,
 		gojsNode = document.getElementById('gojsnode') || scripts[scripts.length - 1],
 		gojsSrc = absSrc(gojsNode);
 
 	// Config function
-	gojs.config = function(data) {
+	gojs.config = function(options) {
 
-		if (data === undefined) {
+		if (options === undefined) {
 			return config;
 		}
 
 		// Merge config
-		for (var key in data) {
-			var curr = data[key];
+		for (var key in options) {
+			var curr = options[key];
 			var prev = config[key];
 
 			if (curr) {
@@ -121,27 +120,6 @@
 			base += '/';
 		}
 		config.base = base;
-
-		// Normalize map option
-		if (!config.debug) {
-			var idList, uriList,
-				idMap = config.map;
-			for (var id in idMap) {
-				idList = idMap[id];
-				uriList = [];
-				for (var i = idList.length - 1; i >= 0; --i) {
-					uriList.unshift(id2Uri(idList[i], gojsSrc));
-				}
-				uriMap[id2Uri(id, gojsSrc)] = uriList;
-			}
-		}
-	};
-
-	// Initialize GoJS
-	gojs.init = function(ids, callback) {
-		async(config.preload, function() {
-			async(ids, callback || function() {});
-		}, gojsSrc);
 	};
 
 	// Save config in dataset
@@ -155,6 +133,7 @@
 	 */
 	var moduleMap = {},
 		loadedMap = {},
+		mapCache = {},
 		currentFactorys = [],
 		head = document.head || document.getElementsByTagName('head')[0];
 
@@ -241,22 +220,8 @@
 		return moduleMap[uri];
 	}
 
-	// Load module by uri
-	function loadModule(uri) {
-		var module = getModuleByUri(uri);
-
-		// Get the mapping uri
-		if (!config.debug) {
-			uri = parseMap(uri);
-		}
-
-		// Prevent multiple loading
-		if (loadedMap[uri]) {
-			return module;
-		}
-		loadedMap[uri] = true;
-
-		// To find a matching loader
+	// Return the matching loader
+	function getLoaderByUri(uri) {
 		var re,
 			loader = JSLoader,
 			loaders = config.loaders;
@@ -267,15 +232,27 @@
 				break;
 			}
 		}
+		return loader;
+	}
+
+	// Load module by uri
+	function loadModule(uri) {
+		// Prevent multiple loading
+		if (loadedMap[uri]) {
+			return;
+		}
+		loadedMap[uri] = true;
 
 		// begin to load the module
+		var module = getModuleByUri(uri),
+			loader = getLoaderByUri(uri);
 		loader.call(null, uri, function(exports) {
 			// Save loader's exports
 			if (exports) {
 				module.exports = exports;
 			}
 			// Modules not in CMD standard
-			if (module.waitings && module.exports === null) {
+			if (module._waitings && module.exports === null) {
 				emitLoad(module);
 			}
 		});
@@ -356,14 +333,29 @@
 	}
 
 	// Parse the mapping uri
-	function parseMap(uri) {
-		for (var key in uriMap) {
-			var list = uriMap[key];
-			for (var i = list.length - 1; i >= 0; --i) {
-				if (list[i] === uri) {
-					return key;
+	function parseMap(uri, referer) {
+		var map = config.map,
+			idList, uriList = [];
+
+		// Check if the id matching in the map
+		for (var key in map) outer: {
+			idList = map[key];
+			for (var i = idList.length - 1; i >= 0; --i) {
+				if (id2Uri(idList[i], referer) === uri) {
+					break outer;
 				}
 			}
+			key = null;
+		}
+
+		// Save the map cache
+		if (key) {
+			key = id2Uri(key, referer);
+			for (var j = idList.length - 1; j >= 0; --j) {
+				uriList.unshift(id2Uri(idList[j], referer));
+			}
+			mapCache[key] = uriList;
+			return key;
 		}
 		return uri;
 	}
@@ -378,7 +370,8 @@
 		// check if the dependence is loaded
 		for (var i = deps.length - 1; i >= 0; --i) {
 			var depUri = id2Uri(deps[i], uri);
-			var depModule = loadModule(depUri);
+			var depModule = getModuleByUri(depUri);
+			loadModule(parseMap(depUri, uri));
 
 			if (depModule._remains === undefined) {
 				--waiting._remains;
@@ -450,7 +443,7 @@
 		// Reduce the mapping uri
 		if (!config.debug) {
 			var index,
-				list = uriMap[uri];
+				list = mapCache[uri];
 			if (list) {
 				index = list.index || 0;
 				uri = list[index];
@@ -488,13 +481,20 @@
 	// An empty object to determine if a CMD loader exists
 	global.define.cmd = {};
 
+	// A Public API to load modules
+	gojs.use = function(ids, callback) {
+		async(config.preload, function() {
+			async(ids, callback || function() {});
+		}, gojsSrc);
+	};
+
 	// For developer
 	gojs.cache = moduleMap;
 
 	// Auto initialization
 	var main = gojsNode.getAttribute('data-main');
 	if (main) {
-		gojs.init(main);
+		gojs.use(main);
 	}
 
 })(this);

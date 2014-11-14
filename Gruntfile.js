@@ -4,13 +4,12 @@ module.exports = function(grunt) {
 		pkg: grunt.file.readJSON('package.json')
 	});
 
+	grunt.loadNpmTasks('grunt-contrib-uglify');
+
 	grunt.registerTask('default', function() {
 
 		grunt.initConfig({
 			uglify: {
-				// options: {
-				// 	mangle: false
-				// },
 				default: {
 					files: {
 						'dist/go.js': 'src/go.js',
@@ -23,6 +22,4 @@ module.exports = function(grunt) {
 
 		grunt.task.run(['uglify']);
 	});
-
-	grunt.loadNpmTasks('grunt-contrib-uglify');
 };

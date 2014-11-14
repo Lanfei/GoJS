@@ -1,6 +1,6 @@
 #GoJS
 
-GoJS是一个适用于Web的JavaScript模块加载器，它可以帮助你更优雅地组织代码和模块。它解决了模块之间的依赖问题和命名冲突问题，同时也解决了同类框架中合并压缩成本高的问题，让你能够更加轻松愉快地享受编码的乐趣。[**README in English**](https://github.com/Lanfei/GoJS/blob/master/README_EN.md)
+GoJS 是一个适用于 Web 的 JavaScript 模块加载器，它可以帮助你更优雅地组织代码和模块。它解决了模块之间的依赖问题和命名冲突问题，同时也解决了同类框架中合并压缩成本高的问题，让你能够更加轻松愉快地享受编码的乐趣。[**README in English**](https://github.com/Lanfei/GoJS/blob/master/README_EN.md)
 
 ##如何使用
 
@@ -60,7 +60,7 @@ gojs.config({
 });
 
 // 加载入口模块
-gojs.init('main');
+gojs.use('main');
 </script>
 ```
 

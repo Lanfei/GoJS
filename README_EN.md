@@ -60,7 +60,7 @@ gojs.config({
 });
 
 // Load main module
-gojs.init('main');
+gojs.use('main');
 </script>
 ```
 
