@@ -1,22 +1,176 @@
 <!DOCTYPE html>
-<html>
-<title>GoJS</title>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Go 使用文档</title>
+	<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
 
-<xmp theme="simplex">
-#使用文档
+<div class="navbar">
+	<div class="wraper">
+		<h1 class="title"><a href="#" class="brand">GoJS 使用文档</a></h1>
+	</div>
+</div>
+
+<div class="main wraper">
+	<div id="intro" class="section">
+		<textarea class="markdown">
+##简介
 　　GoJS 是一个适用于 Web 的 JavaScript 模块加载器，它可以帮助你更优雅地组织代码和模块。它解决了模块之间的依赖问题和命名冲突问题，同时也解决了同类框架中合并压缩成本高的问题，让你能够更加轻松愉快地享受编码的乐趣。
 
-##入门
-- [为什么要使用 GoJS](why-gojs.html)
+###入门
+- [为什么要使用 GoJS](#why-gojs)
 - 5分钟上手 GoJS
 - GoJS 的配置
 
-##基础
+###基础
 
-##进阶
+###进阶
+		</textarea>
+	</div>
 
+	<div id="why-gojs" class="section">
+		<textarea class="markdown">
+##为什么要使用 GoJS
 
-</xmp>
+随着互联网的飞速发展，前端开发越来越复杂。本文将从实际项目中遇到的问题出发，讲述GoJS解决了哪些前端开发中的难题，以及如何使用 GoJS 进行模块化的前端开发。
 
-<script src="assets/strapdown.js"></script>
+###命名冲突
+
+我们从一个简单的例子开始。在开发过程中，为了考虑重用性，常常会把一些底层的、通用的代码提取出来，独立成一个函数，如：
+
+```js
+function print(){
+	// some codes
+}
+```
+
+并将它放入 util.js 文件中，当其它页面需要用到这个功能的时候，只要引入 util.js 就可以了。
+
+但是，这种方法会引入一些隐性的问题：
+
+> 为什么你这个函数叫 **print** 啊！正好我也写了一个函数叫 **print** 把你的给覆盖了啊！结果页面就出问题了啊！要不我这个叫 **print2** 吧！(#‵′)
+
+> 为什么你这个函数叫 **print** 啊！我引入了一个开源模块，里面也有一个函数叫 **print** 啊！改人家的怕有问题，要不改你的吧！(╯‵□′)╯︵┻━┻
+
+咳咳，回到正题，那么如何避免这种情况呢？我们可以用对象模拟命名空间：
+
+```js
+var Util = {};
+
+Util.print = function(){
+	// some codes
+};
+```
+
+但这种方案只能减小冲突的几率，当项目参与的开发人员比较多时，还是可能出现冲突的情况，如命名空间本身的冲突等等，于是只好把命名空间拉长：
+
+```js
+// 本代码来自 Yahoo! 的一个开源项目
+if (org.cometd.Utils.isString(response)) {
+	return org.cometd.JSON.fromJSON(response);
+}
+if (org.cometd.Utils.isArray(response)) {
+	return response;
+}
+```
+
+这样的确可以更大程度上地缓解命名冲突，但调用一个简单的方法，需要记住如此长的命名空间，无疑增加了编码的成本，更是剥夺了许多编码的乐趣。
+
+命名冲突的问题暂且放着，我们继续往下看：
+
+###文件依赖
+
+我们在来讲一个简单的例子，我编写了一个通用的组件 dialog.js，这样其它项目成员就不需要重复造轮子了。
+
+于是有一位同学就这么做了：
+
+```html
+&lt;script src="dialog.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+	com.clanfei.Dialog.init();
+&lt;/script&gt;
+```
+
+看上去似乎没错，但页面报错了！原来我的组件中引用了上一个例子中的 print 方法，而页面中没有引入 util.js，于是给页面加上：
+
+```html
+&lt;script src="util.js"&gt;&lt;/script&gt;
+&lt;script src="dialog.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+	com.clanfei.Dialog.init();
+&lt;/script&gt;
+```
+
+好像又没什么问题了，但我们来看看这个例子的后续发展：
+
+- **某天，我扩充了组件的功能，除了依赖 util.js 外，还需要引入 ajax.js**
+
+	但这时候已经有大量页面用到了这个组件，于是只好全局搜索每一个调用的地方，给每个页面都加上对 ajax.js 的引用。
+
+- **某天，需求有变，组件不再需要用到 print 方法了，于是再次全局搜索去掉了对 util.js 的引用**
+
+	结果好多页面都报错了，原来，虽然 dialog.js 已经不再依赖于 util.js，但页面中的其它模块仍然对 util.js 存在依赖，于是只好累感不爱地去检查每一个页面，看是否仍然依赖于 util.js。
+
+- **某天，需求又变，ajax.js 需要用到 util.js 中的方法**
+
+	!@#$%^&*，看到哪句你哭了，不转不是中国人！
+
+###Why GoJS
+
+我们来看看GoJS是如何解决上述问题的，我们遵循CMD（Common Module Definition）规范来改造上述模块：
+
+```js
+// util.js
+define(function(require, exports){
+	// 使用 exports 导出模块接口
+	exports.print = function(/* args */){
+		// some codes;
+	}
+});
+```
+
+而 Dialog 模块则变成：
+
+```js
+// dialog.js
+define(function(require, exports){
+	// 通过 require 获取其它模块的接口
+	var util = require('util');
+
+	function init(/* args */){
+		util.print('some text');
+	}
+
+	// 也可以通过 return 导出模块接口
+	return {init: init};
+});
+```
+
+而在页面中使用模块也会变的非常简单：
+
+```html
+&lt;script src="go.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+	gojs.use('dialog', function(Dialog){
+		Dialog.init();
+	});
+&lt;/script&gt;
+```
+
+高潮到了！我们可以看出 GoJS 带来的两大好处：
+
+- **通过 `exports` 暴露接口**。这意味着我们不再需要全局变量了，更不需要命名空间，彻底地解决了命名冲突问题。
+- **通过 `require` 引入依赖**。开发者不再需要手动管理文件依赖了，GoJS 会自动分析并加载模块依赖。
+
+###小结
+
+GoJS 解决了前端开发中命名冲突和文件依赖两大问题，极大地减少了维护成本，提高了编码的效率。对开发者来说，他们可以专注于他们所关注的，不必理会模块以外的环境，让他们可以更好地享受编码的乐趣。
+		</textarea>
+	</div>
+</div>
+
+<script src="../src/go.js" data-base="assets/js" data-main="main"></script>
+</body>
 </html>

@@ -1,0 +1,158 @@
+/**
+ * Simple style for markdown.
+ */
+
+body {
+	margin: 0;
+	color: #555;
+	font-size: 14px;
+	line-height: 24px;
+	background: #f7f7f7;
+	font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+h1, h2, h3, h4, h5, h6 {
+	margin: 10px 0;
+	font-weight: bold;
+	font-family: "Josefin Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+h1 {
+	font-size: 36px;
+	line-height: 40px;
+}
+h2 {
+	font-size: 30px;
+	line-height: 40px;
+}
+h3 {
+	font-size: 24px;
+	line-height: 40px;
+}
+h4 {
+	font-size: 18px;
+	line-height: 20px;
+}
+h5 {
+	font-size: 14px;
+	line-height: 20px;
+}
+h6 {
+	font-size: 12px;
+	line-height: 20px;
+}
+p {
+	margin: 5px 0;
+}
+blockquote {
+	margin: 20px 0;
+	padding-left: 20px;
+	border-left: 5px solid #eee;
+}
+li p{
+	text-indent: 0;
+}
+pre {
+	padding: 8px;
+	margin: 20px 0;
+	border-radius: 4px;
+	background: #f5f5f5;
+	border: 1px solid #ccc;
+}
+code {
+	color: #333;
+	font-size: 12px;
+	padding: 2px 4px;
+	border-radius: 4px;
+	border: 1px solid #ccc;
+	font-family: Menlo, Monaco, Consolas, "Courier New", monospace;
+}
+pre code {
+	border: 0;
+	padding: 0;
+}
+a {
+	color: #3173b4;
+	text-decoration: none;
+}
+a:hover{
+	outline: 0;
+	color: #014384;
+	text-decoration: underline;
+}
+
+.navbar{
+	top: 0;
+	width: 100%;
+	position: fixed;
+	background: #fff;
+	border-bottom: 1px solid #dfdfdf;
+}
+.navbar .title{
+	margin: 0;
+	font-size: 20px;
+	font-family: "Josefin Sans","Helvetica Neue",Helvetica,Arial,sans-serif;
+}
+.navbar .brand{
+	color: #555;
+	text-decoration: none;
+}
+.navbar .brand:hover{
+	color: #014384;
+}
+
+.wraper{
+	width: 90%;
+	margin: 0 auto;
+	max-width: 1200px;
+}
+
+.main{
+	padding: 20px 0;
+	margin-top: 40px;
+}
+
+.section,
+.markdown {
+	display: none;
+}
+
+/* Pretty printing styles. Used with prettify.js. */
+
+/* SPAN elements with the classes below are added by prettyprint. */
+.pln { color: #000 }  /* plain text */
+
+@media screen {
+	.str { color: #080 }  /* string content */
+	.kwd { color: #008 }  /* a keyword */
+	.com { color: #800 }  /* a comment */
+	.typ { color: #606 }  /* a type name */
+	.lit { color: #066 }  /* a literal value */
+	/* punctuation, lisp open bracket, lisp close bracket */
+	.pun, .opn, .clo { color: #660 }
+	.tag { color: #008 }  /* a markup tag name */
+	.atn { color: #606 }  /* a markup attribute name */
+	.atv { color: #080 }  /* a markup attribute value */
+	.dec, .var { color: #606 }  /* a declaration; a variable name */
+	.fun { color: red }  /* a function name */
+}
+
+/* Use higher contrast and text-weight for printable form. */
+@media print, projection {
+	.str { color: #060 }
+	.kwd { color: #006; font-weight: bold }
+	.com { color: #600; font-style: italic }
+	.typ { color: #404; font-weight: bold }
+	.lit { color: #044 }
+	.pun, .opn, .clo { color: #440 }
+	.tag { color: #006; font-weight: bold }
+	.atn { color: #404 }
+	.atv { color: #060 }
+}
+
+/* Put a border around prettyprinted code snippets. */
+pre.prettyprint { padding: 2px; border: 1px solid #888 }
+
+/* Specify class=linenums on a pre to get line numbering */
+ol.linenums { margin-top: 0; margin-bottom: 0 } /* IE indents via margin-left */
+li.L0, li.L1, li.L2, li.L3, li.L5, li.L6, li.L7, li.L8 { list-style-type: none }
+/* Alternate shading for lines */
+li.L1, li.L3, li.L5, li.L7, li.L9 { background: #eee }
