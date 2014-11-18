@@ -8,7 +8,7 @@
 	var config = gojs.config(),
 		head = document.head || document.getElementsByTagName('head')[0];
 
-	function CSSLoader(uri, callback) {
+	function CSSLoader(uri, expose) {
 		var charset = config.charset,
 			node = document.createElement('link');
 		node.rel = 'stylesheet';
@@ -18,11 +18,11 @@
 			node.onload = node.onerror = node.onreadystatechange = function() {
 				if (!node.readyState || /loaded|complete/.test(node.readyState)) {
 					node.onload = node.onerror = node.onreadystatechange = null;
-					callback(node);
+					expose(node);
 				}
 			};
 		} else {
-			callback(node);
+			expose(node);
 		}
 		head.insertBefore(node, head.firstChild);
 	}

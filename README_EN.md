@@ -8,10 +8,9 @@ GoJS is a JavaScript module loader for web, which can organize your codes and mo
 
 ```
 <!--
-data-base: The root path used for all module lookups
 data-main: The entry module
 -->
-<script id="gojsnode" src="path/to/go.js" data-base="path/to/base/" data-main="main"></script>
+<script id="gojsnode" src="path/to/go.js" data-main="main"></script>
 ```
 
 You can also use advanced configuration:
@@ -19,32 +18,30 @@ You can also use advanced configuration:
 ```
 <script src="path/to/go.js"></script>
 <script>
-// GoJS config (the following parameters are optional)
+// Configure GoJS (the following parameters are optional)
 gojs.config({
-	// The root path used for all module lookups
-	base: 'path/to/base/',
-	// A map used for path conversions
-	map: {
-		// For example, a.js and b.js were merged into a-b.min.js
-		'a-b.min': ['a', 'b']
-	},
 	// A map used for simplify long module identifications
 	alias: {
-		'jquery': 'http://code.jquery.com/jquery-2.1.1.min.js'
+		'jquery': 'http://example.com/path/to/lib/jquery-2.1.1.min.js'
 	},
 	// A map used for simplify long paths
 	paths: {
-		'path': 'this/is/a/long/path'
+		'deepdir': 'path/to/a/deep/dir'
 	},
 	// In some scenarios, module path may be determined during run time, it can be configured by the vars option
 	vars: {
 		'locale': document.location.hash || 'zh-cn'
 	},
+	// A map used for path conversions
+	map: {
+		// For example, foo.js and bar.js were merged into foo-bar.min.js
+		'foo-bar.min': ['foo', 'bar']
+	},
 	// For the expansion of other loaders
 	loaders: [
-		css: function(uri, callback){
+		txt: function(uri, exports){
 			// ...
-			// callback(exports);
+			// exports(exports);
 		}
 	],
 	// Pre-load plugins or modules
@@ -53,8 +50,10 @@ gojs.config({
 		'./gojs-json',
 		'./i18n/{locale}'
 	],
-	// If debug is true, GoJS will not use the map option
+	// Debug mode
 	debug: false,
+	// The root path used for all module lookups
+	base: 'path/to/base/',
 	// The charset of module files
 	charset: 'utf-8'
 });
@@ -111,6 +110,6 @@ GoJS is available under the terms of the [MIT License](https://github.com/Lanfei
 
 ##What's More
 
->Finally, a tribute to RequireJS and SeaJS, but also to pay tribute to all the people who work dedicated to open source.
+>Finally, a tribute to [RequireJS](http://requirejs.org) and [Sea.js](http://seajs.org), but also to pay tribute to all the people who work dedicated to open source.
 
 ——[Lanfei](http://www.clanfei.com/) on November 5, 2014

@@ -25,14 +25,14 @@
 		return {};
 	}
 
-	function JSONLoader(uri, callback) {
+	function JSONLoader(uri, expose) {
 		var xhr = createStandardXHR() || createActiveXHR();
 		xhr.onreadystatechange = function() {
 			if (xhr.readyState == 4) {
 				if(xhr.status == 200){
-					callback(parseJSON(xhr.responseText));
+					expose(parseJSON(xhr.responseText));
 				}else{
-					callback();
+					expose();
 				}
 			}
 		};

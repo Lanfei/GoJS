@@ -8,10 +8,9 @@ GoJS 是一个适用于 Web 的 JavaScript 模块加载器，它可以帮助你�
 
 ```
 <!--
-data-base: 模块文件的基础路径
 data-main: 入口模块
 -->
-<script id="gojsnode" src="path/to/go.js" data-base="path/to/base/" data-main="main"></script>
+<script id="gojsnode" src="path/to/go.js" data-main="main"></script>
 ```
 
 或者使用更高级的配置方式：
@@ -21,40 +20,39 @@ data-main: 入口模块
 <script>
 // 配置GoJS（以下参数均为可选）
 gojs.config({
-	// 模块文件的基础路径
-	base: 'path/to/base/',
-	// 模块路径映射表，用于调试或压缩合并的路径转换
-	map: {
-		// 如a.js与b.js合并压缩为a-b.min.js
-		'a-b.min': ['a', 'b']
-	},
 	// 用于简化较长的模块标识
 	alias: {
-		'jquery': 'http://code.jquery.com/jquery-2.1.1.min.js'
+		'jquery': 'http://example.com/path/to/lib/jquery-2.1.1.min.js'
 	},
 	// 用于简化较长的模块目录
 	paths: {
-		'path': 'this/is/a/long/path'
+		'deepdir': 'path/to/a/deep/dir'
 	},
 	// 某些场景下，模块路径在运行时才能确定，这时可以通过 vars 选项来配置
 	vars: {
 		'locale': document.location.hash || 'zh-cn'
 	},
-	// 用于拓展JS模块以外的加载器
+	// 模块路径映射表，用于调试或压缩合并的路径转换
+	map: {
+		// 如 foo.js 与 bar.js 合并压缩为 foo-bar.min.js
+		'foo-bar.min': ['foo', 'bar']
+	},
+	// 用于拓展 JS 模块以外的加载器
 	loaders: [
-		css: function(uri, callback){
+		txt: function(uri, exports){
 			// ...
-			// callback(exports);
+			// exports(exports);
 		}
 	],
 	// 需要预加载的插件或模块
 	preload: [
 		'jquery',
-		'./gojs-json',
 		'./i18n/{locale}'
 	],
-	// 是否为调试模式，调试模式将不使用合并模块文件
+	// 调试模式下，加载器不会删除动态插入的 script 标签
 	debug: false,
+	// 模块文件的基础路径
+	base: 'path/to/base/',
 	// 模块文件的编码
 	charset: 'utf-8'
 });
@@ -111,6 +109,6 @@ GoJS遵循 [MIT 协议](https://github.com/Lanfei/GoJS/blob/master/LICENSE)，�
 
 ##说点什么
 
->最后，向RequireJS和SeaJS致敬，也向所有致力于开源工作的自由人致敬。
+> 最后，向 [RequireJS](http://requirejs.org) 和 [Sea.js](http://seajs.org) 致敬，也向所有投身于开源工作的自由人致敬。
 
 ——[张耕畅](http://www.clanfei.com/)于2014年11月05日

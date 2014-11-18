@@ -7,12 +7,11 @@ body {
 	font-size: 14px;
 	line-height: 24px;
 	background: #f7f7f7;
-	font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+	font-family: "Josefin Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 h1, h2, h3, h4, h5, h6 {
 	margin: 10px 0;
 	font-weight: bold;
-	font-family: "Josefin Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 h1 {
 	font-size: 36px;
@@ -126,7 +125,7 @@ a:hover {
 	padding: 40px 0;
 }
 
-.footer .top {
+.footer .cat{
 	float: right;
 }
 

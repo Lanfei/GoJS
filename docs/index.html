@@ -22,15 +22,27 @@
 ###入门
 - [为什么要使用 GoJS](#why-gojs)
 - [5 分钟上手 GoJS](#quick-start)
-- [GoJS 的详细配置](#config)
+- [GoJS 基础 API](#api)
 
 ###基础
 
-- 文档完善中
+- [CMD 模块定义规范](#cmd)
+- [GoJS 模块标识](#identifier)
+- [require 书写约定](#require)
+- [GoJS 的详细配置](#config)
 
 ###进阶
 
-- 文档完善中
+- [如何将现有模块改造为 CMD 规范](#reform)
+
+###插件
+
+- [gojs-css](#gojs-css)
+- [gojs-json](#gojs-json)
+
+最后，向 [RequireJS](http://requirejs.org) 和 [Sea.js](http://seajs.org) 致敬，也向所有投身于开源工作的自由人致敬。
+
+注：部分文档参考自 `Sea.js`。
 		</textarea>
 	</div>
 
@@ -240,6 +252,594 @@ define(function(require, exports, module) {
 所有示例存放于 [examples](https://github.com/Lanfei/GoJS/tree/master/examples) 目录中。
 		</textarea>
 	</div>
+	<div id="api" class="section">
+		<textarea class="markdown">
+##GoJS 基础 API
+
+以下是 GoJS 的常用API：
+
+###gojs.config(options)
+
+用来 配置 GoJS 或读取 GoJS 配置：
+
+```js
+// 配置
+gojs.config({
+	base: 'path/to/base',
+	debug: true
+});
+
+// 读取
+console.log(gojs.config());
+```
+
+更多配置选项请参考 [GoJS 的详细配置](#config)。
+
+###gojs.use(ids, callback?)
+
+用来在页面中加载一个或多个模块。
+
+```js
+// 加载一个模块
+gojs.use('./a');
+
+// 加载多个模块
+gojs.use(['./a', './b']);
+
+// 加载模块后执行回调
+gojs.use(['./a', './b'], function(a, b){
+	a.doSomething();
+	b.doSomething();
+});
+```
+
+**注意**：`gojs.use` 理论上应该只用于加载启动模块，不应该出现在 `define` 中的模块代码里。在代码中需要异步加载其它模块时，请使用 `require.async` 方法。
+
+###define(factory)
+
+用来定义一个模块，统一规范如下：
+
+```js
+define(function(require, exports, module) {
+	// 模块代码
+});
+```
+
+`require`, `exports` 和 `module` 三个参数可酌情省略，具体用法如下。
+
+###require(id)
+
+`require` 用来获取指定模块的接口。
+
+```js
+define(function(require) {
+	// 获取模块 a 的接口
+	var a = require('./a');
+
+	// 调用模块 a 的方法
+	a.doSomething();
+});
+```
+
+**注意**：`require` 方法需要遵循一定的 [书写规范](#require)。
+
+###require.async(ids, callback?)
+
+用来在模块内部异步加载一个或多个模块。
+
+```js
+define(function(require) {
+	// 异步加载一个模块，在加载完成时，执行回调
+	require.async('./b', function(b) {
+		b.doSomething();
+	});
+
+	// 异步加载多个模块，在加载完成时，执行回调
+	require.async(['./c', './d'], function(c, d) {
+		c.doSomething();
+		d.doSomething();
+	});
+});
+```
+
+###exports
+
+用来在模块内部对外提供接口。
+
+```js
+define(function(require, exports) {
+	// 对外提供 foo 属性
+	exports.foo = 'bar';
+
+	// 对外提供 doSomething 方法
+	exports.doSomething = function() {};
+});
+```
+
+###module.exports
+
+与 `exports` 类似，用来在模块内部对外提供接口。
+
+```js
+define(function(require, exports, module) {
+	// 对外提供接口
+	module.exports = {
+		name: 'a',
+		doSomething: function() {};
+	};
+});
+```
+
+关于 `define`，`require`，`exports` 与 `module.exports` 的更多内容，请参考 [CMD 模块定义规范](#cmd)。
+		</textarea>
+	</div>
+	<div id="cmd" class="section">
+		<textarea class="markdown">
+##CMD 模块定义规范
+在 GoJS 中，所有 JavaScript 模块都遵循 CMD（[Common Module Definition](https://github.com/cmdjs/specification/blob/master/draft/module.md)） 模块定义规范。该规范明确了模块的基本书写格式和基本交互规则。
+
+在 CMD 规范中，一个模块就是一个文件。代码的书写格式如下：
+
+```js
+define(factory);
+```
+
+###define `Function`
+
+`define` 是一个全局函数，用来定义模块。
+
+###define `define(factory)`
+
+`define` 接受 `factory` 参数，`factory` 可以是一个函数，也可以是一个对象或字符串。
+
+`factory` 为对象、字符串时，表示模块的接口就是该对象、字符串。比如可以如下定义一个 JSON 数据模块：
+
+```js
+define({ "foo": "bar" });
+```
+
+也可以通过字符串定义模板模块：
+
+```js
+define('I am a template. My name is {{name}}.');
+```
+
+`factory` 为函数时，表示是模块的构造方法。执行该构造方法，可以得到模块向外提供的接口。`factory` 方法在执行时，默认会传入三个参数：`require`、`exports` 和 `module`：
+
+```js
+define(function(require, exports, module) {
+	// 模块代码
+});
+```
+
+###define.cmd `Object`
+
+一个空对象，可用来判定当前页面是否有 CMD 模块加载器：
+
+```js
+if (typeof define === "function" && define.cmd) {
+	// 有 GoJS 等 CMD 模块加载器存在
+}
+```
+
+###require `Function`
+
+`require` 是 `factory` 函数的第一个参数。
+
+###require `require(id)`
+
+`require` 是一个方法，接受 [模块标识](#identifier) 作为唯一参数，用来获取其他模块提供的接口。
+
+```js
+define(function(require, exports) {
+
+	// 获取模块 a 的接口
+	var a = require('./a');
+
+	// 调用模块 a 的方法
+	a.doSomething();
+
+});
+```
+
+**注意**：在开发时，`require` 的书写需要遵循一些 [简单约定](#require)。
+
+###require.async `require.async(id, callback?)`
+
+`require.async` 方法用来在模块内部异步加载模块，并在加载完成后执行指定回调。`callback` 参数可选。
+
+```js
+define(function(require, exports, module) {
+
+	// 异步加载一个模块，在加载完成时，执行回调
+	require.async('./b', function(b) {
+		b.doSomething();
+	});
+
+	// 异步加载多个模块，在加载完成时，执行回调
+	require.async(['./c', './d'], function(c, d) {
+		c.doSomething();
+		d.doSomething();
+	});
+
+});
+```
+
+**注意**：`require` 是同步往下执行，`require.async` 则是异步回调执行。`require.async` 一般用来加载可延迟异步加载的模块。
+
+###require.resolve `require.resolve(id)`
+
+使用模块系统内部的路径解析机制来解析并返回模块路径。该函数不会加载模块，只返回解析后的绝对路径。
+
+```js
+define(function(require, exports) {
+
+	console.log(require.resolve('./b'));
+	// => http://example.com/path/to/b.js
+
+});
+```
+
+###exports `Object`
+
+`exports` 是一个对象，用来向外提供模块接口。
+
+```js
+define(function(require, exports) {
+
+	// 对外提供 foo 属性
+	exports.foo = 'bar';
+
+	// 对外提供 doSomething 方法
+	exports.doSomething = function() {};
+
+});
+```
+
+除了给 `exports` 对象增加成员，还可以使用 `return` 直接向外提供接口。
+
+```js
+define(function(require) {
+
+	// 通过 return 直接提供接口
+	return {
+		foo: 'bar',
+		doSomething: function() {}
+	};
+
+});
+```
+
+如果 `return` 语句是模块中的唯一代码，还可简化为：
+
+```js
+define({
+	foo: 'bar',
+	doSomething: function() {}
+});
+```
+
+上面这种格式特别适合定义 `JSONP` 模块。
+
+**特别注意**：下面这种写法是错误的！
+
+```js
+define(function(require, exports) {
+
+	// 错误用法！！!
+	exports = {
+		foo: 'bar',
+		doSomething: function() {}
+	};
+
+});
+```
+
+正确的写法是用 `return` 或者给 `module.exports` 赋值：
+
+```js
+define(function(require, exports, module) {
+
+	// 正确写法
+	module.exports = {
+		foo: 'bar',
+		doSomething: function() {}
+	};
+
+});
+```
+
+**提示**：`exports` 仅仅是 `module.exports` 的一个引用。在 `factory` 内部给 `exports` 重新赋值时，并不会改变 `module.exports` 的值。因此给 `exports` 赋值是无效的，不能用来更改模块接口。
+
+###module `Object`
+
+`module` 是一个对象，上面存储了与当前模块相关联的一些属性和方法。
+
+###module.id `String`
+
+模块的唯一标识。
+
+###module.uri `String`
+
+根据模块系统的路径解析规则得到的模块绝对路径。
+
+```js
+define(function(require, exports, module) {
+
+	console.log(module.uri); 
+	// ==> http://example.com/path/to/this/file.js
+
+});
+```
+
+###module.dependencies `Array`
+
+`dependencies` 是一个数组，表示当前模块的依赖。
+
+###module.exports `Object`
+
+当前模块对外提供的接口。
+
+传给 `factory` 构造方法的 `exports` 参数是 `module.exports` 对象的一个引用。只通过 `exports` 参数来提供接口，有时无法满足开发者的所有需求。 比如当模块的接口是某个类的实例时，需要通过 `module.exports` 来实现：
+
+```js
+define(function(require, exports, module) {
+
+	// exports 是 module.exports 的一个引用
+	console.log(module.exports === exports); // true
+
+	// 重新给 module.exports 赋值
+	module.exports = new SomeClass();
+
+	// exports 不再等于 module.exports
+	console.log(module.exports === exports); // false
+
+});
+```
+
+**注意**：对 module.exports 的赋值需要同步执行，不能放在回调函数里。下面这样是不行的：
+
+```js
+// x.js
+define(function(require, exports, module) {
+
+	// 错误用法
+	setTimeout(function() {
+		module.exports = { a: "hello" };
+	}, 0);
+
+});
+```
+
+在 `y.js` 里有调用到上面的 `x.js`:
+
+```js
+// y.js
+define(function(require, exports, module) {
+
+	var x = require('./x');
+
+	// 无法立刻得到模块 x 的属性 a
+	console.log(x.a); // undefined
+
+});
+```
+
+##小结
+
+这就是 CMD 模块定义规范的所有内容。经常使用的 API 只有 `define`，`require`，`require.async`，`exports`，`module.exports` 这五个。其他 API 有个印象就好，在需要时再来查文档，不用刻意去记。
+
+与 RequireJS 的 AMD 规范相比，CMD 规范尽量保持简单，并与 CommonJS 和 Node.js 的 Modules 规范保持了很大的兼容性。通过 CMD 规范书写的模块，可以很容易在 Node.js 中运行。
+
+		</textarea>
+	</div>
+	<div id="identifier" class="section">
+		<textarea class="markdown">
+##模块标识
+
+模块标识是一个字符串，用来标识模块。在 `require`、`require.async` 等函数中，第一个参数都是模块标识。
+
+- 模块标识必须是一个有意义的字符串。
+- 模块标识可以不包含文件后缀名，如 `.js`。
+- 模块标识可以是相对路径，也可以是绝对路径。
+
+注：GoJS 对模块标识的命名规范不做要求（如驼峰命名法、或使用连接符（`-`）、下划线（`_`）等），可根据项目习惯自行决定。
+
+###相对标识
+
+相对标识以 `.` 开头，在模块环境中（`define` 的 `factory` 方法里面）时，始终相对于当前模块的地址来解析；在页面环境中（`gojs.use`）时，始终相对于当前页面的地址来解析。
+
+```js
+// 在 http://example.com/js/a.js 的 factory 中：
+require.resolve('./b');
+	// => http://example.com/js/b.js
+
+require.resolve('../c');
+	// => http://example.com/c.js
+```
+
+```html
+<script>
+// 在 http://example.com/index.html 中：
+gojs.use('./js/main');
+	// => http://example.com/js/main.js
+</script>
+```
+
+###顶级标识
+
+顶级标识不以点（`.`）或斜线（`/`）开始，它始终相对于 GoJS 的基础路径来解析。
+
+```js
+// 假设 base 路径是：http://example.com/assets/
+require.resolve('js/lib/jquery');
+	// => http://example.com/assets/js/lib/jquery.js
+```
+
+```html
+<script>
+// 假设 base 路径是：http://example.com/assets/
+gojs.use('js/main');
+	// => http://example.com/assets/js/main.js
+</script>
+```
+
+基础路径的默认值为 `go.js` 的访问路径目录：
+
+```
+如果 go.js 的访问路径是：
+	http://example.com/assets/go.js
+
+则 base 路径为：
+	http://example.com/assets/
+```
+
+可以通过 `gojs.config` 来手工 [配置基础路径](#config)。
+
+###普通路径
+
+除了相对和顶级标识之外的标识都是普通路径。普通路径的解析规则，和 `script` 标签一样，会相对当前页面解析。
+
+```js
+// 假设当前页面是 http://example.com/path/to/index.html
+
+// 绝对路径是普通路径：
+require.resolve('http://cdn.com/js/a');
+	// => http://cdn.com/js/a.js
+
+// 根路径是普通路径：
+require.resolve('/js/b');
+	// => http://example.com/js/b.js
+```
+
+###后缀名自动添加规则
+
+GoJS 在解析模块标识时，除非路径中含有问号（`?`），或最后一个字符是井号（`#`），或模块标识中已有 `.js`、`.json`、`.css` 后缀，否者都会自动为其添加拓展名（`.js`）。如果不想自动添加扩展名，可以在末尾加上井号（`#`）。
+
+```js
+// ".js" 后缀可以省略：
+require.resolve('http://example.com/js/a');
+require.resolve('http://example.com/js/a.js');
+	// => http://example.com/js/a.js
+
+// ".css" 后缀不可省略：
+require.resolve('http://example.com/css/a.css');
+	// => http://example.com/css/a.css
+
+// 当路径中有问号（"?"）时，不会自动添加后缀：
+require.resolve('http://example.com/js/a.json?callback=define');
+	// => http://example.com/js/a.json?callback=define
+
+// 当路径以井号（"#"）结尾时，不会自动添加后缀，且在解析时，会自动去掉井号：
+require.resolve('http://example.com/js/a.json#');
+	// => http://example.com/js/a.json
+```
+
+###设计原则
+
+模块标识设计的核心出发点是：
+
+1. **关注度分离**。比如书写模块 `a.js` 时，如果需要引用 `b.js`，则只需要知道 `b.js` 相对 `a.js` 的相对路径即可，无需关注其他。
+
+2. **尽量与浏览器的解析规则一致**。比如根路径、绝对路径，都是相对所在页面的 URL 进行解析。
+		</textarea>
+	</div>
+	<div id="require" class="section">
+		<textarea class="markdown">
+##require 书写约定
+
+由于 GoJS 通过正则匹配来自动识别和提取模块依赖，因此使用 GoJS 书写模块代码时，需要遵循一些简单规则。
+
+###1. 正确拼写
+
+模块 `factory` 构造方法的第一个参数 必须 命名为 `require` 。
+
+```js
+// 错误！
+define(function(req) {
+	// ...
+});
+
+// 正确！
+define(function(require) {
+	// ...
+});
+```
+
+**注意**：在对模块代码进行压缩构建时，也请不要对 `require` 进行混淆，如在 `grunt-contrib-uglify` 中：
+
+```js
+grunt.initConfig({
+	uglify: {
+		options: {
+			mangle: {
+				except: ['require']
+			}
+		},
+		my_target: {
+			files: {
+				// ...
+			}
+		}
+	}
+});
+```
+
+###2. 不要修改
+
+不要重命名 `require` 函数，或在任何作用域中给 `require` 重新赋值。
+
+```js
+// 错误 - 重命名 require！
+var req = require, mod = req("./mod");
+
+// 错误 - 重定义 require!
+require = function() {};
+
+// 错误 - 重定义 require 为函数参数！
+function F(require) {}
+
+// 错误 - 在内嵌作用域内重定义了 require！
+function F() {
+	var require = function() {};
+}
+```
+
+###3. 使用直接量
+
+`require` 的参数值 必须 是字符串直接量。
+
+```js
+// 错误！
+require(myModule);
+
+// 错误！
+require('my-' + 'module');
+
+// 错误！
+require('MY-MODULE'.toLowerCase());
+
+// 正确！
+require('my-module');
+```
+
+在书写模块代码时，必须遵循这些规则。其实只要把 `require` 看做是 **语法关键字** 就好啦。
+
+###动态依赖
+
+有时会希望可以使用 require 来进行条件加载：
+
+```js
+if (todayIsWeekend) {
+	require('play');
+} else {
+	require('work');
+}
+```
+
+但请牢记，从静态分析的角度来看，这个模块同时依赖 play 和 work 两个模块，加载器会把这两个模块文件都下载下来。 这种情况下，推荐使用 `require.async` 来进行条件加载。
+		</textarea>
+	</div>
 	<div id="config" class="section">
 		<textarea class="markdown">
 ##GoJS 的详细配置
@@ -267,14 +867,13 @@ gojs.config({
 	// 预加载项
 	preload: [
 		'jquery',
-		'./gojs-json',
 		'./i18n/{locale}'
 	],
 	// 加载器配置
 	loaders: [
-		css: function(uri, callback){
+		txt: function(uri, exports){
 			// ...
-			// callback(exports);
+			// exports(exports);
 		}
 	],
 	// 调试模式
@@ -393,6 +992,21 @@ define(function(require, exports) {
 });
 ```
 
+###loaders `Array`
+
+当需要将一些非 JS 文件作为模块来加载和管理时，可以通过 loaders 来配置自定义的加载器。
+
+```js
+gojs.config({
+	loaders: [
+		txt: function(uri, expose){
+			// some codes
+			expose(exports);
+		}
+	]
+});
+```
+
 ###debug `Boolean`
 
 当 `debug` 的值为 `true` 时，加载器不会删除动态插入的 script 标签，默认为 `false`。
@@ -440,11 +1054,154 @@ gojs.config({
 独立成一个文件时，一般需要通过 `script` 标签在页面中同步引入。
 		</textarea>
 	</div>
+	<div id="reform" class="section">
+		<textarea class="markdown">
+##如何将现有模块改造为 CMD 规范
+
+首先还是请大家先了解一下 [CMD 模块定义规范](#cmd)，只要洞悉事物的定义和本质，一切问题可迎刃而解。
+
+###改造主流模块
+
+这里指的是 jQuery、Moment、Backbone、underscore 等业界主流模块，这些模块一般都有对 AMD 和 CommonJS 的支持代码，例如 jQuery 源文件的最后几行：
+
+```js
+if ( typeof define === "function" && define.amd ) {
+	define( "jquery", [], function() {
+		return jQuery;
+	});
+}
+```
+
+我们只要将其对 AMD 规范的支持改造为 CMD 即可：
+
+```js
+if ( typeof define === "function" && define.cmd ) {
+	define(function() {
+		return jQuery;
+	});
+}
+```
+
+###改造普通模块
+
+对于没有模块化兼容代码的文件，则需要手动引入依赖，以及暴露模块所提供的接口。
+
+如：
+
+```js
+var dialog = {
+	init: function(options){
+		$('body').append('<div class="dialog"></div>');
+		// some codes
+	},
+	show: function(){
+		// some codes
+	}
+};
+```
+
+改为：
+
+```js
+define(function(require, exports, module){
+	var $ = require('jquery');
+
+	var dialog = {
+		init: function(options){
+			$('body').append('<div class="dialog"></div>');
+			// some codes
+		},
+		show: function(){
+			// some codes
+		}
+	};
+	
+	return dialog;
+});
+```
+
+或：
+
+```js
+define(function(require, exports, module){
+	var $ = require('jquery');
+
+	exports.init = function(options){
+		$('body').append('<div class="dialog"></div>');
+		// some codes
+	};
+
+	exports.show = function(){
+		// some codes
+	}
+
+});
+```
+
+###改造 jQuery 插件
+
+这也是一个经常遇到的问题，我们推荐以下的包装方式：
+
+```js
+// jquery-plugin-abc
+define(function(require, exports, module) {
+	var $ = require('$');
+	$.fn.abc = function() {
+		// some codes
+	};
+});
+```
+		</textarea>
+	</div>
+	<div id="gojs-css" class="section">
+		<textarea class="markdown">
+##gojs-css
+
+有时候可能需要将 CSS 文件也作为模块进行加载和管理，这时候可以使用 gojs-css 插件。
+
+```js
+gojs.config({
+	preload: ['gojs-css']
+});
+```
+
+然后在模块中进行引用：
+
+```js
+define(function(require){
+	require('login.css');
+	// some codes
+});
+```
+		</textarea>
+	</div>
+	<div id="gojs-json" class="section">
+		<textarea class="markdown">
+##gojs-json
+
+有时候可能需要将 JSON 文件也作为模块进行加载和管理，这时候可以使用 gojs-json 插件。
+
+```js
+gojs.config({
+	preload: ['gojs-json']
+});
+```
+
+然后在模块中进行引用：
+
+```js
+define(function(require){
+	var data = require('data.json');
+	// some codes
+});
+```
+		</textarea>
+	</div>
 </div>
 
 <div class="footer wraper">
 	Powered by <a target="_blank" href="http://www.clanfei.com">Lanfei</a>
-	<a class="top">Back to top</a>
+	<a class="cat" href="#">返回目录</a>
 </div>
 
 <script id="gojsnode" src="../src/go.js" data-main="./assets/js/main"></script>

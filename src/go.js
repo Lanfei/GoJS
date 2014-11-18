@@ -1,5 +1,5 @@
 /**
- * GoJS 1.4.0
+ * GoJS 1.4.1
  * https://github.com/Lanfei/GoJS
  * A JavaScript module loader following CMD standard
  * [Common Module Definition](https://github.com/cmdjs/specification/blob/master/draft/module.md)
@@ -15,7 +15,7 @@
 	}
 
 	var gojs = global.gojs = {
-		version: '1.4.0'
+		version: '1.4.1'
 	};
 
 	/**
@@ -39,7 +39,10 @@
 
 	// Return the directory name of pathname path
 	function dirname(path) {
-		return path.match(/[^?#]*\//)[0];
+		if (path.indexOf('/') >= 0) {
+			return path.match(/[^?#]*\//)[0];
+		}
+		return path;
 	}
 
 	// Return the absolute path of script element
@@ -103,7 +106,7 @@
 		return uri;
 	}
 
-	// Config function
+	// Configure
 	gojs.config = function(options) {
 
 		if (options === undefined) {
@@ -275,7 +278,7 @@
 	}
 
 	// Create script element
-	function JSLoader(uri, callback) {
+	function JSLoader(uri, expose) {
 		var charset = config.charset,
 			node = document.createElement('script');
 		node.src = uri;
@@ -296,7 +299,7 @@
 				}
 				node = null;
 
-				callback();
+				expose();
 			}
 		};
 		head.insertBefore(node, head.firstChild);
@@ -414,6 +417,8 @@
 			ids = [ids];
 		}
 
+		callback = callback || function() {};
+
 		callback.dependencies = ids;
 		callback.uri = referer;
 
@@ -499,7 +504,7 @@
 	// A Public API to load modules
 	gojs.use = function(ids, callback) {
 		async(config.preload, function() {
-			async(ids, callback || function() {}, location.href);
+			async(ids, callback, location.href);
 		});
 	};
 
