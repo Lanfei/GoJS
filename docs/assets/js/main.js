@@ -19,7 +19,8 @@ define(function(require) {
 		});
 		$('.section').each(function() {
 			$(this).html(marked($(this).children('.markdown').val()));
-		}).eq(0);
+		});
+		$('#loading').remove();
 		updateView();
 	}
 
