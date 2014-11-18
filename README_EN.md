@@ -39,9 +39,9 @@ gojs.config({
 	},
 	// For the expansion of other loaders
 	loaders: [
-		txt: function(uri, exports){
+		txt: function(uri, expose){
 			// ...
-			// exports(exports);
+			// expose(exports);
 		}
 	],
 	// Pre-load plugins or modules

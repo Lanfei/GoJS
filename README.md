@@ -39,9 +39,9 @@ gojs.config({
 	},
 	// 用于拓展 JS 模块以外的加载器
 	loaders: [
-		txt: function(uri, exports){
+		txt: function(uri, expose){
 			// ...
-			// exports(exports);
+			// expose(exports);
 		}
 	],
 	// 需要预加载的插件或模块
