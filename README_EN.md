@@ -18,7 +18,7 @@ You can also use advanced configuration:
 ```
 <script src="path/to/go.js"></script>
 <script>
-// Configure GoJS (the following parameters are optional)
+// Configure GoJS (all the following parameters are optional)
 gojs.config({
 	// A map used for simplify long module identifications
 	alias: {
