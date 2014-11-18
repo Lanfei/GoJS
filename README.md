@@ -32,7 +32,7 @@ gojs.config({
 	vars: {
 		'locale': document.location.hash || 'zh-cn'
 	},
-	// 模块路径映射表，用于调试或压缩合并的路径转换
+	// 模块路径映射表，用于合并压缩后的路径转换
 	map: {
 		// 如 foo.js 与 bar.js 合并压缩为 foo-bar.min.js
 		'foo-bar.min': ['foo', 'bar']
