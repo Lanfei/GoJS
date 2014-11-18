@@ -1,7 +1,6 @@
 /**
  * Simple style for markdown.
  */
-
 body {
 	margin: 0;
 	color: #555;
@@ -47,72 +46,88 @@ blockquote {
 	padding-left: 20px;
 	border-left: 5px solid #eee;
 }
-li p{
+li p {
 	text-indent: 0;
 }
 pre {
 	padding: 8px;
 	margin: 20px 0;
+	overflow: auto;
+	line-height: 18px;
 	border-radius: 4px;
 	background: #f5f5f5;
 	border: 1px solid #ccc;
 }
 code {
 	color: #333;
-	font-size: 12px;
+	font-size: .8em;
 	padding: 2px 4px;
 	border-radius: 4px;
 	border: 1px solid #ccc;
+	vertical-align: middle;
 	font-family: Menlo, Monaco, Consolas, "Courier New", monospace;
 }
 pre code {
 	border: 0;
 	padding: 0;
 }
+strong{
+	color: #222;
+}
 a {
+	cursor: pointer;
 	color: #3173b4;
 	text-decoration: none;
 }
-a:hover{
+a:hover {
 	outline: 0;
 	color: #014384;
 	text-decoration: underline;
 }
 
-.navbar{
+.navbar {
 	top: 0;
+	left: 0;
 	width: 100%;
 	position: fixed;
 	background: #fff;
 	border-bottom: 1px solid #dfdfdf;
+	_position: absolute;
 }
-.navbar .title{
+.navbar .title {
 	margin: 0;
 	font-size: 20px;
 	font-family: "Josefin Sans","Helvetica Neue",Helvetica,Arial,sans-serif;
 }
-.navbar .brand{
+.navbar .brand {
 	color: #555;
 	text-decoration: none;
 }
-.navbar .brand:hover{
+.navbar .brand:hover {
 	color: #014384;
 }
 
-.wraper{
+.wraper {
 	width: 90%;
 	margin: 0 auto;
 	max-width: 1200px;
 }
 
-.main{
-	padding: 20px 0;
-	margin-top: 40px;
+.main {
+	padding-top: 60px;
 }
 
 .section,
 .markdown {
 	display: none;
+}
+
+.footer {
+	padding: 40px 0;
+}
+
+.footer .top {
+	float: right;
 }
 
 /* Pretty printing styles. Used with prettify.js. */

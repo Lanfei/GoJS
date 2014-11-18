@@ -5,12 +5,15 @@
  */
 
 (function() {
-	var head = document.head || document.getElementsByTagName('head')[0];
+	var config = gojs.config(),
+		head = document.head || document.getElementsByTagName('head')[0];
 
 	function CSSLoader(uri, callback) {
-		var node = document.createElement('link');
+		var charset = config.charset,
+			node = document.createElement('link');
 		node.rel = 'stylesheet';
 		node.href = uri;
+		node.charset = isFunction(charset) ? charset(uri) : charset;
 		if ('onload' in node || 'onreadystatechange' in node) {
 			node.onload = node.onerror = node.onreadystatechange = function() {
 				if (!node.readyState || /loaded|complete/.test(node.readyState)) {
@@ -24,7 +27,7 @@
 		head.insertBefore(node, head.firstChild);
 	}
 
-	config.config({
+	gojs.config({
 		loaders: {
 			css: CSSLoader
 		}

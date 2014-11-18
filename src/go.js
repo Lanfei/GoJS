@@ -1,5 +1,5 @@
 /**
- * GoJS 1.3.0
+ * GoJS 1.4.0
  * https://github.com/Lanfei/GoJS
  * A JavaScript module loader following CMD standard
  * [Common Module Definition](https://github.com/cmdjs/specification/blob/master/draft/module.md)
@@ -15,7 +15,7 @@
 	}
 
 	var gojs = global.gojs = {
-		version: '1.3.0'
+		version: '1.4.0'
 	};
 
 	/**
@@ -67,8 +67,10 @@
 	 */
 	var PROTOCOL_RE = /^(http:|https:|file:)?\/\//;
 
-	var config = {
-			base: '',
+	var scripts = document.scripts,
+		gojsNode = document.getElementById('gojsnode') || scripts[scripts.length - 1],
+		gojsSrc = absSrc(gojsNode),
+		config = {
 			map: {},
 			vars: {},
 			alias: {},
@@ -76,11 +78,30 @@
 			loaders: {},
 			preload: [],
 			debug: false,
+			base: dirname(gojsSrc),
 			charset: 'utf-8'
-		},
-		scripts = document.scripts,
-		gojsNode = document.getElementById('gojsnode') || scripts[scripts.length - 1],
-		gojsSrc = absSrc(gojsNode);
+		};
+
+	// Return the absolute uri according to referer parameter
+	function resolveUri(uri, referer) {
+		// Relative
+		if (referer && uri.indexOf('.') === 0) {
+			uri = normPath(dirname(referer) + uri);
+		}
+		// Default protocol
+		else if (uri.indexOf('//') === 0) {
+			uri = location.protocol + uri;
+		}
+		// Root
+		else if (uri.indexOf('/') === 0) {
+			uri = location.href.replace(/^(.*?\/\/.*?)\/.*/, '$1') + uri;
+		}
+		// Top-level
+		else if (!PROTOCOL_RE.test(uri)) {
+			uri = normPath(config.base + uri);
+		}
+		return uri;
+	}
 
 	// Config function
 	gojs.config = function(options) {
@@ -89,7 +110,22 @@
 			return config;
 		}
 
-		// Merge config
+		// Remove empty preload items
+		var preload = options.preload;
+		for (var i = preload.length - 1; i >= 0; --i) {
+			if (preload[i] === '') {
+				preload.splice(i, 1);
+			}
+		}
+
+		// Normalize base option
+		var base = resolveUri(options.base || dirname(gojsSrc), location.href);
+		if (base.slice(-1) !== '/') {
+			base += '/';
+		}
+		options.base = base;
+
+		// Merge and save config
 		for (var key in options) {
 			var curr = options[key];
 			var prev = config[key];
@@ -108,25 +144,7 @@
 
 			config[key] = curr;
 		}
-
-		// Normalize base option
-		var base = config.base;
-		if (!PROTOCOL_RE.test(base)) {
-			base = dirname(location.href) + base;
-		} else if (base.indexOf('//') === 0) {
-			base = location.protocol + base;
-		}
-		if (base.slice(-1) !== '/') {
-			base += '/';
-		}
-		config.base = base;
 	};
-
-	// Save config in dataset
-	gojs.config({
-		base: gojsNode.getAttribute('data-base'),
-		debug: gojsNode.getAttribute('data-debug') === 'true'
-	});
 
 	/**
 	 * Loader
@@ -152,7 +170,6 @@
 				return absSrc(script);
 			}
 		}
-
 	}
 
 	// Convert ID to URI based on referer
@@ -177,18 +194,15 @@
 			}
 		}
 
-		if (referer && uri.indexOf('.') === 0) {
-			uri = normPath(dirname(referer) + uri);
-		} else if (uri.indexOf('//') === 0) {
-			uri = location.protocol + uri;
-		} else if (uri.indexOf('/') === 0) {
-			uri = location.href.replace(/^(.*?\/\/.*?)\/.*/, '$1') + uri;
-		} else if (!PROTOCOL_RE.test(uri)) {
-			uri = normPath(config.base + uri);
-		}
+		// Get the absolute uri
+		uri = resolveUri(uri, referer);
+
+		// If the uri ends with `#`, just return it without `#`
 		if (uri.slice(-1) === '#') {
 			uri = uri.substring(0, uri.length - 1);
-		} else if (uri.indexOf('?') < 0 && !/(\.js(on)?|\.css|\/)$/.test(uri)) {
+		}
+		// Add `.js` extension
+		else if (uri.indexOf('?') < 0 && !/(\.js(on)?|\.css|\/)$/.test(uri)) {
 			uri += '.js';
 		}
 		return uri;
@@ -262,10 +276,11 @@
 
 	// Create script element
 	function JSLoader(uri, callback) {
-		var node = document.createElement('script');
+		var charset = config.charset,
+			node = document.createElement('script');
 		node.src = uri;
-		node.charset = config.charset;
 		node.async = true;
+		node.charset = isFunction(charset) ? charset(uri) : charset;
 		node.onload = node.onerror = node.onreadystatechange = function() {
 			if (!node.readyState || /loaded|complete/.test(node.readyState)) {
 				// Save modules if currentScript is unable to get
@@ -276,7 +291,9 @@
 
 				// Ensure only run once and handle memory leak in IE
 				node.onload = node.onerror = node.onreadystatechange = null;
-				head.removeChild(node);
+				if (!config.debug) {
+					head.removeChild(node);
+				}
 				node = null;
 
 				callback();
@@ -441,14 +458,12 @@
 	function saveModule(uri, factory) {
 
 		// Reduce the mapping uri
-		if (!config.debug) {
-			var index,
-				list = mapCache[uri];
-			if (list) {
-				index = list.index || 0;
-				uri = list[index];
-				list.index = index + 1;
-			}
+		var index,
+			list = mapCache[uri];
+		if (list) {
+			index = list.index || 0;
+			uri = list[index];
+			list.index = index + 1;
 		}
 
 		// Save the module
@@ -484,8 +499,8 @@
 	// A Public API to load modules
 	gojs.use = function(ids, callback) {
 		async(config.preload, function() {
-			async(ids, callback || function() {});
-		}, gojsSrc);
+			async(ids, callback || function() {}, location.href);
+		});
 	};
 
 	// For developer

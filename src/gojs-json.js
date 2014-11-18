@@ -40,7 +40,7 @@
 		xhr.send();
 	}
 
-	config.config({
+	gojs.config({
 		loaders: {
 			css: JSONLoader
 		}

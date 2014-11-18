@@ -21,12 +21,16 @@
 
 ###入门
 - [为什么要使用 GoJS](#why-gojs)
-- 5分钟上手 GoJS
-- GoJS 的配置
+- [5 分钟上手 GoJS](#quick-start)
+- [GoJS 的详细配置](#config)
 
 ###基础
 
+- 文档完善中
+
 ###进阶
+
+- 文档完善中
 		</textarea>
 	</div>
 
@@ -87,20 +91,20 @@ if (org.cometd.Utils.isArray(response)) {
 于是有一位同学就这么做了：
 
 ```html
-&lt;script src="dialog.js"&gt;&lt;/script&gt;
-&lt;script&gt;
+<script src="dialog.js"></script>
+<script>
 	com.clanfei.Dialog.init();
-&lt;/script&gt;
+</script>
 ```
 
 看上去似乎没错，但页面报错了！原来我的组件中引用了上一个例子中的 print 方法，而页面中没有引入 util.js，于是给页面加上：
 
 ```html
-&lt;script src="util.js"&gt;&lt;/script&gt;
-&lt;script src="dialog.js"&gt;&lt;/script&gt;
-&lt;script&gt;
+<script src="util.js"></script>
+<script src="dialog.js"></script>
+<script>
 	com.clanfei.Dialog.init();
-&lt;/script&gt;
+</script>
 ```
 
 好像又没什么问题了，但我们来看看这个例子的后续发展：
@@ -151,12 +155,12 @@ define(function(require, exports){
 而在页面中使用模块也会变的非常简单：
 
 ```html
-&lt;script src="go.js"&gt;&lt;/script&gt;
-&lt;script&gt;
+<script src="go.js"></script>
+<script>
 	gojs.use('dialog', function(Dialog){
 		Dialog.init();
 	});
-&lt;/script&gt;
+</script>
 ```
 
 高潮到了！我们可以看出 GoJS 带来的两大好处：
@@ -166,11 +170,283 @@ define(function(require, exports){
 
 ###小结
 
-GoJS 解决了前端开发中命名冲突和文件依赖两大问题，极大地减少了维护成本，提高了编码的效率。对开发者来说，他们可以专注于他们所关注的，不必理会模块以外的环境，让他们可以更好地享受编码的乐趣。
+GoJS 解决了前端开发中命名冲突和文件依赖两大问题，对前端项目来说，它极大地减少了维护成本，提高了编码的效率，同时也非常有助于代码的组织和性能的优化。对开发者来说，他们可以只专注于他们所关注的，不必理会模块逻辑以外的环境，让他们能够更加享受编码的乐趣。
+		</textarea>
+	</div>
+	<div id="quick-start" class="section">
+		<textarea class="markdown">
+##5 分钟上手 GoJS
+
+下面我们通过一个简单而经典的例子来了解 GoJS 的使用。
+
+###初始化
+
+在页面中通过 `script` 标签引入 GoJS 后，再通过一段简单的代码进行配置：
+
+```html
+<script id="gojsnode" src="path/to/go.js"></script>
+<script>
+// GoJS的简单配置
+gojs.config({
+	// ...
+});
+gojs.use('assets/js/hello/main');
+</script>
+```
+
+在不需要配置 GoJS 的场景下，可以直接通过 `data-main` 来设置入口模块：
+
+```html
+<script id="gojsnode" src="path/to/go.js" data-main="assets/js/hello/main"></script>
+```
+
+###模块代码
+
+下面开始编写我们的模块，首先是入口模块 `main.js`：
+
+```js
+define(function(require){
+
+	// 通过 require 引入依赖
+	var hello = require('./hello');
+	hello.sayTo('GoJS');
+
+});
+```
+
+接下来是模块 `hello.js`：
+
+```js
+define(function(require, exports, module) {
+
+	function sayTo(target) {
+		document.body.innerHTML = 'Hello, ' + target;
+	}
+
+	// 通过 exports 导出接口
+	exports.sayTo = sayTo;
+
+	// 或者通过 module.exports 导出整个接口
+	// module.exports = {
+	// 	sayTo: sayTo
+	// };
+});
+```
+
+###完成
+
+一个简单的 **Hello GoJS** 就这样完成了。怎么样，上手GoJS真的只需要5分钟吧？
+
+所有示例存放于 [examples](https://github.com/Lanfei/GoJS/tree/master/examples) 目录中。
+		</textarea>
+	</div>
+	<div id="config" class="section">
+		<textarea class="markdown">
+##GoJS 的详细配置
+
+我们可以通过 `gojs.config(options)` 方法来灵活地进行配置：
+
+```js
+gojs.config({
+	// 别名配置
+	alias: {
+		'jquery': 'http://example.com/path/to/lib/jquery-2.1.1.min.js'
+	},
+	// 路径配置
+	paths: {
+		'deepdir': 'path/to/a/deep/dir'
+	},
+	// 变量配置
+	vars: {
+		'locale': 'zh-cn'
+	},
+	// 映射配置
+	map: {
+		'foo-bar.min': ['foo', 'bar']
+	},
+	// 预加载项
+	preload: [
+		'jquery',
+		'./gojs-json',
+		'./i18n/{locale}'
+	],
+	// 加载器配置
+	loaders: [
+		css: function(uri, callback){
+			// ...
+			// callback(exports);
+		}
+	],
+	// 调试模式
+	debug: false,
+	// 模块文件的基础路径
+	base: 'path/to/base/',
+	// 文件编码
+	charset: 'utf-8'
+});
+```
+
+###alias `Object`
+
+当模块标识很长时，可以使用 `alias` 来简化。
+
+```js
+gojs.config({
+	alias: {
+		'jquery': 'http://example.com/path/to/lib/jquery-2.1.1.min.js'
+	}
+});
+```
+
+```js
+define(require){
+	// 将会加载 http://example.com/path/to/lib/jquery-2.1.1.min.js
+	var $ = require('jquery');
+}
+```
+
+###paths `Object`
+
+当模块标识中的目录比较长时，可以使用 `paths` 来简化书写。
+
+```js
+gojs.config({
+	paths: {
+		'deepdir': 'path/to/a/deep/dir'
+	}
+});
+```
+
+```js
+define(require){
+	// 将会加载 path/to/a/deep/dir/biz.js
+	var biz = require('deepdir/biz.js');
+}
+```
+
+###vars `Object`
+
+有些场景下，模块路径在运行时才能确定，这时可以使用 `vars` 来配置。
+
+```js
+gojs.config({
+	vars: {
+		'locale': 'zh-cn'
+	}
+});
+```
+
+```js
+define(function(require) {
+	// 加载的是 ./i18n/zh-cn.js
+	var lang = require('./i18n/{locale}.js');
+});
+```
+
+###map `Object`
+
+当项目发布上线时，常常需要通过合并压缩 JS 文件来减少 HTTP 连接数，这时可以通过 `map` 来配置。
+
+```js
+gojs.config({
+	map: {
+		'foo-bar.min': ['foo', 'bar']
+	}
+});
+```
+
+```js
+define(function(require) {
+	// 加载的是 ./foo-bar.min.js
+	var foo = require('./foo.js');
+	var bar = require('./bar.js');
+});
+```
+
+###preload `Array`
+
+GoJS 会在普通模块加载前，先加载好 preload 选项中指定的模块。
+
+```js
+// 在老版本浏览器中，提前加载好 ES5 和 json 模块
+gojs.config({
+	// preload 中的空字符串会被忽略掉
+	preload: [
+		Function.prototype.bind ? '' : 'es5-safe',
+		this.JSON ? '' : 'json2'
+	]
+});
+
+// 当 use 被调用时，会先确保 preload 中的模块已经加载完毕
+gojs.use('./main');
+```
+
+**注意**：`preload` 配置不能放在模块文件里面：
+
+```js
+gojs.config({
+	preload: 'a'
+});
+
+define(function(require, exports) {
+	// 此处执行时，不能保证模块 a 已经加载
+});
+```
+
+###debug `Boolean`
+
+当 `debug` 的值为 `true` 时，加载器不会删除动态插入的 script 标签，默认为 `false`。
+
+###base `String`
+
+在解析顶级标识时，会相对 `base` 路径来解析。详情请参阅 [模块标识](#identifier)
+
+建议尽量在模块中使用相对标识，这样只需要知道所依赖的模块相对于当前模块的路径即可，而不需要考虑外部环境变化。
+
+###charset `String | Function`
+
+获取模块文件时，`script` 或 `link` 标签的 charset 属性，默认是 `utf-8`。
+
+`charset` 还可以是一个函数：
+
+```js
+gojs.config({
+	charset: function(url){
+		if(url.indexOf('http://example.com/') >= 0){
+			return 'gbk';
+		}
+		return 'utf-8';
+	}
+});
+```
+
+##其它说明
+
+###配置合并
+
+`go.config` 可以多次运行，每次运行时，GoJS 会对对配置选项中未存在的项进行合并，已存在的项进行覆盖。
+
+###配置文件
+
+配置可以直接写在 html 页面上，也可以独立出来成为一个文件。
+
+```js
+// config.js
+gojs.config({
+	// ...
+});
+```
+
+独立成一个文件时，一般需要通过 `script` 标签在页面中同步引入。
 		</textarea>
 	</div>
 </div>
 
-<script src="../src/go.js" data-base="assets/js" data-main="main"></script>
+<div class="footer wraper">
+	Powered by <a target="_blank" href="http://www.clanfei.com">Lanfei</a>
+	<a class="top">Back to top</a>
+</div>
+
+<script id="gojsnode" src="../src/go.js" data-main="./assets/js/main"></script>
 </body>
 </html>
