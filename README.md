@@ -62,7 +62,7 @@ gojs.use('main');
 </script>
 ```
 
-###第二步，编写遵循 [CMD规范](https://github.com/seajs/seajs/issues/242) 的模块
+###第二步，编写遵循 [CMD规范](http://lanfei.github.io/GoJS/docs/index.html#cmd) 的模块
 
 ```
 // main.js
