@@ -116,6 +116,12 @@ a:hover {
 	padding-top: 60px;
 }
 
+.loading{
+	margin: 30px 0;
+	font-size: 24px;
+	font-weight: bold;
+}
+
 .section,
 .markdown {
 	display: none;

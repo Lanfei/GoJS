@@ -20,7 +20,7 @@ define(function(require) {
 		$('.section').each(function() {
 			$(this).html(marked($(this).children('.markdown').val()));
 		});
-		$('#loading').remove();
+		$('.loading').remove();
 		updateView();
 	}
 
