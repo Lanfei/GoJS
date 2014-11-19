@@ -5,7 +5,7 @@ define(function(require, exports) {
 		
 		var node = document.createElement('div');
 		node.id = 'login';
-		node.innerHTML = '<h2>Sign in</h2><form><input type="text" placeholder="Username or Email" /><input type="password" placeholder="Password" /></form><button type="submit">Sign in</button><button id="close">Close</button>';
+		node.innerHTML = '<h2>Sign in</h2><form><input type="text" placeholder="Username or Email" /><input type="password" placeholder="Password" /><button type="submit">Sign in</button><button id="close">Close</button></form>';
 		document.body.appendChild(node);
 	}
 
