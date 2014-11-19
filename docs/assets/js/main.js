@@ -56,20 +56,23 @@ define(function(require) {
 		if (!window.WeixinJSBridge) {
 			return;
 		}
-		var data = {
+		try {
+			WeixinJSBridge.on('menu:share:appmessage', function(argv) {
+				WeixinJSBridge.invoke('sendAppMessage', getShareData());
+			});
+			WeixinJSBridge.on('menu:share:timeline', function(argv) {
+				WeixinJSBridge.invoke('shareTimeline', getShareData());
+			});
+		} catch (e) {}
+	}
+
+	function getShareData() {
+		return {
 			title: document.title,
 			link: document.location.href,
 			desc: $('#intro p').eq(0).text(),
 			img_url: 'http://tp3.sinaimg.cn/1562087202/180/40038430931/1'
 		};
-		try {
-			WeixinJSBridge.on('menu:share:appmessage', function(argv) {
-				WeixinJSBridge.invoke('sendAppMessage', data);
-			});
-			WeixinJSBridge.on('menu:share:timeline', function(argv) {
-				WeixinJSBridge.invoke('shareTimeline', data);
-			});
-		} catch (e) {}
 	}
 
 	function updateView(id) {
