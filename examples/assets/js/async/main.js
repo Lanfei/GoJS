@@ -2,9 +2,9 @@ define(function(require){
 
 	var println = require('../println');
 
-	// Load modules in async mode
+	// Load `foo` in async mode
 	require.async('./foo', function(foo){
-		println(foo.bar);
+		println('async: ' + foo.bar);
 	});
 
 });
