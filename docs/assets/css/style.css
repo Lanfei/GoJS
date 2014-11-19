@@ -37,6 +37,9 @@ h6 {
 	font-size: 12px;
 	line-height: 20px;
 }
+ul{
+	padding-left: 2em;
+}
 p {
 	margin: 5px 0;
 }
