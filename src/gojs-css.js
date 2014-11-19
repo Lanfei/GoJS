@@ -13,7 +13,7 @@
 			node = document.createElement('link');
 		node.rel = 'stylesheet';
 		node.href = uri;
-		node.charset = isFunction(charset) ? charset(uri) : charset;
+		node.charset = typeof charset === 'function' ? charset(uri) : charset;
 		if ('onload' in node || 'onreadystatechange' in node) {
 			node.onload = node.onerror = node.onreadystatechange = function() {
 				if (!node.readyState || /loaded|complete/.test(node.readyState)) {

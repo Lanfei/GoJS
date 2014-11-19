@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>GoJS - Merge</title>
+</head>
+<body>
+	<script id="gojsnode" src="../src/go.js"></script>
+	<script>
+	gojs.config({
+		map: {
+			// foo.js and bar.js are merged into foo-bar.min.js
+			'./foo-bar.min': ['./foo', './bar']
+		}
+	});
+	gojs.use('./assets/js/merge/main');
+	</script>
+</body>
+</html>

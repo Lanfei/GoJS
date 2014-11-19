@@ -1,5 +1,5 @@
 /**
- * GoJS 1.5.1
+ * GoJS 1.5.2
  * https://github.com/Lanfei/GoJS
  * A JavaScript module loader following CMD standard
  * [Common Module Definition](https://github.com/cmdjs/specification/blob/master/draft/module.md)
@@ -16,7 +16,7 @@
 
 	// Current version of GoJS
 	var gojs = global.gojs = {
-		version: '1.5.1'
+		version: '1.5.2'
 	};
 
 	// Config Data of GoJS
@@ -182,13 +182,13 @@
 	};
 
 	// Load modules in async mode
-	Module.use = function(ids, callback, uri) {
+	Module.use = function(ids, callback, referer) {
 		if (isString(ids)) {
 			ids = [ids];
 		}
 
 		// Save the meta data
-		var module = new Module(uri);
+		var module = new Module(referer);
 		module.dependencies = ids || [];
 		module.callback = callback || function() {};
 		module.status = STATUS.SAVED;
@@ -200,13 +200,11 @@
 		// Reduce the mapping uri
 		var list = mapCache[uri];
 		if (list) {
-			list.current = list.current || 0;
-			var currUri = list[list.current++];
-			// Reduce memory
-			if (list.current >= list.length) {
+			var current = list.shift();
+			if (list.length === 0) {
 				delete mapCache[uri];
 			}
-			uri = currUri;
+			uri = current;
 		}
 
 		// Save the meta data
@@ -236,10 +234,13 @@
 		// Update the map cache
 		if (key) {
 			key = id2Uri(key, referer);
-			for (var j = idList.length - 1; j >= 0; --j) {
-				uriList.unshift(id2Uri(idList[j], referer));
+			// If there is no cache, then save the map cache
+			if (!mapCache[key]) {
+				for (var j = idList.length - 1; j >= 0; --j) {
+					uriList.unshift(id2Uri(idList[j], referer));
+				}
+				mapCache[key] = uriList;
 			}
-			mapCache[key] = uriList;
 			return key;
 		}
 		return uri;
@@ -290,6 +291,7 @@
 
 	// Load dependencies of the module
 	Module.prototype.load = function() {
+
 		var deps = this.dependencies,
 			referer = this.uri;
 
