@@ -10,12 +10,7 @@ define(function(require) {
 	var marked = require('./marked');
 	var prettify = require('./prettify');
 
-	function updateView(id) {
-		id = id || location.href.replace(/(?:.*(#\w+)|.*)/, '$1') || '#intro';
-		$('.section').hide();
-		$(id).show();
-		setTimeout(window.scrollTo, 0, 0, 0);
-	}
+	var title = document.title;
 
 	function initPage() {
 		marked.setOptions({
@@ -27,10 +22,14 @@ define(function(require) {
 			$(this).html(marked($(this).children('.markdown').val()));
 		});
 		$('.loading').remove();
+		initShare();
 		updateView();
 	}
 
 	function initEvent() {
+		$(document).bind({
+			WeixinJSBridgeReady: initShare
+		});
 		if ('onhashchange' in window) {
 			$(window).on({
 				hashchange: function() {
@@ -51,6 +50,33 @@ define(function(require) {
 				window.scrollTo(0, 0);
 			}
 		});
+	}
+
+	function initShare() {
+		if (!window.WeixinJSBridge) {
+			return;
+		}
+		var data = {
+			title: document.title,
+			link: document.location.href,
+			desc: $('#intro p').eq(0).text(),
+			img_url: 'http://tp3.sinaimg.cn/1562087202/180/40038430931/1'
+		};
+		try {
+			WeixinJSBridge.on('menu:share:appmessage', function(argv) {
+				WeixinJSBridge.invoke('sendAppMessage', data);
+			});
+			WeixinJSBridge.on('menu:share:timeline', function(argv) {
+				WeixinJSBridge.invoke('shareTimeline', data);
+			});
+		} catch (e) {}
+	}
+
+	function updateView(id) {
+		id = id || location.href.replace(/(?:.*(#\w+)|.*)/, '$1') || '#intro';
+		$('.section').hide();
+		document.title = title + ' - ' + $(id).show().find('h2').eq(0).text();
+		setTimeout(window.scrollTo, 0, 0, 0);
 	}
 
 	function escape(code) {
