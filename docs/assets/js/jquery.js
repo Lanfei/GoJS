@@ -10267,7 +10267,7 @@ jQuery.fn.andSelf = jQuery.fn.addBack;
 
 if ( typeof define === "function" ) {
 	if(define.cmd){
-		define(function() {
+		define(function(require, exports, module) {
 			return jQuery;
 		});
 	}else if(define.amd){

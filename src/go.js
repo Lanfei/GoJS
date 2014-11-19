@@ -1,5 +1,5 @@
 /**
- * GoJS 1.4.1
+ * GoJS 1.5.0
  * https://github.com/Lanfei/GoJS
  * A JavaScript module loader following CMD standard
  * [Common Module Definition](https://github.com/cmdjs/specification/blob/master/draft/module.md)
@@ -14,9 +14,27 @@
 		return;
 	}
 
+	// Current version of GoJS
 	var gojs = global.gojs = {
-		version: '1.4.1'
+		version: '1.5.0'
 	};
+
+	// Config Data of GoJS
+	var config = {};
+
+	/**
+	 * Type
+	 */
+	function isType(type) {
+		return function(obj) {
+			return {}.toString.call(obj) === '[object ' + type + ']';
+		};
+	}
+
+	var isObject = isType('Object');
+	var isString = isType('String');
+	var isFunction = isType('Function');
+	var isArray = Array.isArray || isType('Array');
 
 	/**
 	 * Path
@@ -42,7 +60,7 @@
 		if (path.indexOf('/') >= 0) {
 			return path.match(/[^?#]*\//)[0];
 		}
-		return path;
+		return '';
 	}
 
 	// Return the absolute path of script element
@@ -50,43 +68,8 @@
 		return script.hasAttribute ? script.src : script.getAttribute('src', 4);
 	}
 
-	/**
-	 * Lang
-	 */
-
-	function isType(type) {
-		return function(obj) {
-			return {}.toString.call(obj) === '[object ' + type + ']';
-		};
-	}
-
-	var isObject = isType('Object');
-	var isString = isType('String');
-	var isFunction = isType('Function');
-	var isArray = Array.isArray || isType('Array');
-
-	/**
-	 * Config
-	 */
-	var PROTOCOL_RE = /^(http:|https:|file:)?\/\//;
-
-	var scripts = document.scripts,
-		gojsNode = document.getElementById('gojsnode') || scripts[scripts.length - 1],
-		gojsSrc = absSrc(gojsNode),
-		config = {
-			map: {},
-			vars: {},
-			alias: {},
-			paths: {},
-			loaders: {},
-			preload: [],
-			debug: false,
-			base: dirname(gojsSrc),
-			charset: 'utf-8'
-		};
-
-	// Return the absolute uri according to referer parameter
-	function resolveUri(uri, referer) {
+	// Return the absolute uri based on referer
+	function absUri(uri, referer) {
 		// Relative
 		if (referer && uri.indexOf('.') === 0) {
 			uri = normPath(dirname(referer) + uri);
@@ -100,11 +83,431 @@
 			uri = location.href.replace(/^(.*?\/\/.*?)\/.*/, '$1') + uri;
 		}
 		// Top-level
-		else if (!PROTOCOL_RE.test(uri)) {
+		else if (!/^(http:|https:|file:)?\/\//.test(uri)) {
 			uri = normPath(config.base + uri);
 		}
 		return uri;
 	}
+
+	// Convert id to uri based on referer
+	function id2Uri(id, referer) {
+		var key, uri,
+			alias = config.alias,
+			paths = config.paths,
+			vars = config.vars;
+
+		// Parse alias
+		uri = config.alias[id] || id;
+
+		// Parse paths
+		for (key in paths) {
+			if (uri.indexOf(key + '/') === 0) {
+				uri = uri.replace(key, paths[key]);
+				break;
+			}
+		}
+
+		// Parse vars
+		for (key in vars) {
+			if (uri.indexOf('{' + key + '}') >= 0) {
+				uri = uri.replace('{' + key + '}', vars[key]);
+			}
+		}
+
+		// Get the absolute uri
+		uri = absUri(uri, referer);
+
+		// If the uri ends with `#`, just return it without `#`
+		if (uri.slice(-1) === '#') {
+			uri = uri.substring(0, uri.length - 1);
+		}
+		// Add `.js` extension
+		else if (uri.indexOf('?') < 0 && !/(\.js(on)?|\.css|\/)$/.test(uri)) {
+			uri += '.js';
+		}
+		return uri;
+	}
+
+	// Convert uri to id according to `base` url
+	function uri2Id(uri) {
+		var id = uri.replace(config.base, '');
+		if (id.slice(-3) === '.js') {
+			id = id.substring(0, id.length - 3);
+		}
+		return id;
+	}
+
+	/**
+	 * Module
+	 */
+	var mapCache = {},
+		moduleCache = {},
+		fetchedList = {};
+
+	var STATUS = Module.STATUS = {
+		// 1 - The `module.uri` is being fetched
+		FETCHING: 1,
+		// 2 - The meta data has been saved to cachedMods
+		SAVED: 2,
+		// 3 - The `module.dependencies` are being loaded
+		LOADING: 3,
+		// 4 - The module are ready to execute
+		LOADED: 4,
+		// 5 - The module is being executed
+		EXECUTING: 5,
+		// 6 - The `module.exports` is available
+		EXECUTED: 6
+	};
+
+	// The constuctor
+	function Module(uri) {
+		// Meta data
+		this.id = uri2Id(uri);
+		this.uri = uri;
+		this.exports = null;
+		this.dependencies = [];
+
+		this.status = 0;
+		this.factory = null;
+		this.callback = null;
+		// Who depends on me
+		this.waitings = [];
+		// The number of unloaded dependencies
+		this.remains = 0;
+	}
+
+	// Get an existed module or create a new one
+	Module.get = function(uri) {
+		return moduleCache[uri] || (moduleCache[uri] = new Module(uri));
+	};
+
+	// Load modules in async mode
+	Module.use = function(ids, callback, uri) {
+		if (isString(ids)) {
+			ids = [ids];
+		}
+
+		// Save the meta data
+		var module = new Module(uri);
+		module.dependencies = ids || [];
+		module.callback = callback || function() {};
+		module.status = STATUS.SAVED;
+		module.load();
+	};
+
+	// Save the meta data to the cache
+	Module.save = function(uri, factory) {
+		// Reduce the mapping uri
+		var list = mapCache[uri];
+		if (list) {
+			list.current = list.current || 0;
+			var currUri = list[list.current++];
+			// Reduce memory
+			if (list.current >= list.length) {
+				delete mapCache[uri];
+			}
+			uri = currUri;
+		}
+
+		// Save the meta data
+		var module = Module.get(uri);
+		module.factory = factory;
+		module.dependencies = module.resolve();
+		module.status = STATUS.SAVED;
+		module.load();
+	};
+
+	// Parse the mapping uri
+	Module.parse = function(uri, referer) {
+		var map = config.map,
+			idList, uriList = [];
+
+		// Check if the id matching in the map
+		for (var key in map) outer: {
+			idList = map[key];
+			for (var i = idList.length - 1; i >= 0; --i) {
+				if (id2Uri(idList[i], referer) === uri) {
+					break outer;
+				}
+			}
+			key = null;
+		}
+
+		// Update the map cache
+		if (key) {
+			key = id2Uri(key, referer);
+			for (var j = idList.length - 1; j >= 0; --j) {
+				uriList.unshift(id2Uri(idList[j], referer));
+			}
+			mapCache[key] = uriList;
+			return key;
+		}
+		return uri;
+	};
+
+	// Fetch module by uri
+	Module.prototype.fetch = function() {
+		// Prevent multiple fetching
+		if (this.status >= STATUS.FETCHING || fetchedList[this.uri]) {
+			return;
+		}
+		this.status = STATUS.FETCHING;
+		fetchedList[this.uri] = true;
+
+		// Load the module
+		var module = this,
+			uri = this.uri,
+			loader = parseLoader(uri);
+		loader.call(null, uri, function expose(exports) {
+			// Save loader's exports
+			if (exports) {
+				module.exports = exports;
+				module.onload();
+			}
+			// Modules not in CMD standard
+			if (module.status <= STATUS.FETCHING) {
+				module.onload();
+			}
+		});
+	};
+
+	// Parse the dependencies in factory
+	Module.prototype.resolve = function() {
+		var re = /(?:[^\$\w\.])require\( *['"]([^'"]+)['"] *\)/g,
+			code = this.factory.toString(),
+			deps = [];
+
+		code.replace(re, function(_, $1) {
+			deps.push($1);
+		});
+
+		return deps;
+	};
+
+	// Load dependencies of the module
+	Module.prototype.load = function() {
+		var deps = this.dependencies,
+			referer = this.uri;
+
+		this.status = STATUS.LOADING;
+		this.remains = deps.length;
+
+		// check the status of dependencies
+		for (var i = deps.length - 1; i >= 0; --i) {
+			var uri = id2Uri(deps[i], referer);
+			var module = Module.get(uri);
+
+			if (module.status >= STATUS.LOADED) {
+				--this.remains;
+			} else {
+				module.waitings.push(this);
+				// Parse the mapping module
+				var mappingUri = Module.parse(uri, referer);
+				if (mappingUri !== uri) {
+					// Do not save the mapping module to the cache
+					module = new Module(mappingUri);
+				}
+				module.fetch();
+			}
+		}
+
+		// If all the dependencies are loaded
+		if (this.remains === 0) {
+			this.onload();
+		}
+	};
+
+	// When the module is loaded
+	Module.prototype.onload = function() {
+
+		this.status = STATUS.LOADED;
+
+		// if there is a callback function
+		if (this.callback) {
+			var args = [],
+				uri = this.uri,
+				deps = this.dependencies;
+
+			// Resolve arguments
+			for (var i = deps.length - 1; i >= 0; --i) {
+				var depUri = id2Uri(deps[i], uri);
+				args.unshift(Module.get(depUri).exec());
+			}
+
+			this.callback.apply(null, args);
+		} else {
+			// Notify waiting modules
+			var waitings = this.waitings;
+			for (var j = waitings.length - 1; j >= 0; --j) {
+				var module = waitings[j];
+				if (--module.remains === 0) {
+					module.onload();
+				}
+			}
+		}
+
+		// Reduce memory
+		delete this.callback;
+		delete this.waitings;
+		delete this.remains;
+	};
+
+	Module.prototype.exec = function() {
+
+		if (this.status >= STATUS.EXECUTING) {
+			return this.exports;
+		}
+		this.status = STATUS.EXECUTING;
+
+		// Create the require function
+		var uri = this.uri;
+		function require(id) {
+			return Module.get(id2Uri(id, uri)).exec();
+		}
+		require.resolve = function(id) {
+			return id2Uri(id, uri);
+		};
+		require.async = function(ids, callback) {
+			Module.use(ids, callback, uri);
+		};
+
+		// Execute the factory
+		var factory = this.factory;
+		if (typeof factory === 'function') {
+			var exports = factory(require, this.exports, this);
+			this.exports = exports || this.exports;
+		} else {
+			this.exports = factory;
+		}
+
+		this.status = STATUS.EXECUTED;
+
+		// Reduce memory
+		delete this.factory;
+
+		return this.exports;
+	};
+
+	// For Developers
+	gojs.Module = Module;
+	gojs.cache = moduleCache;
+
+	/**
+	 * Loader
+	 */
+	var currentFactorys = [],
+		scripts = document.scripts,
+		head = document.head || document.getElementsByTagName('head')[0];
+
+	// Return the matching loader
+	function parseLoader(uri) {
+		var re,
+			loader = JSLoader,
+			loaders = config.loaders;
+		for (var key in loaders) {
+			re = new RegExp('\\.' + key + '(\\?|$)');
+			if (re.test(uri)) {
+				loader = loaders[key];
+				break;
+			}
+		}
+		return loader;
+	}
+
+	// Create script element
+	function JSLoader(uri, expose) {
+		var charset = config.charset,
+			node = document.createElement('script');
+		node.src = uri;
+		node.async = true;
+		node.charset = isFunction(charset) ? charset(uri) : charset;
+		node.onload = node.onerror = node.onreadystatechange = function() {
+			if (!node.readyState || /loaded|complete/.test(node.readyState)) {
+				// Save modules if currentScript is unable to get
+				for (var i = 0, l = currentFactorys.length; i < l; ++i) {
+					Module.save(uri, currentFactorys[i]);
+				}
+				currentFactorys = [];
+
+				// Ensure only run once and handle memory leak in IE
+				node.onload = node.onerror = node.onreadystatechange = null;
+				if (!config.debug) {
+					head.removeChild(node);
+				}
+				node = null;
+
+				expose();
+			}
+		};
+		head.insertBefore(node, head.firstChild);
+	}
+
+	// Return the url of the current script
+	function getCurrentScript() {
+
+		// Chrome
+		if (document.currentScript) {
+			return absSrc(document.currentScript);
+		}
+
+		// IE 6-9
+		for (var i = 0, l = scripts.length; i < l; ++i) {
+			var script = scripts[i];
+			if (script.readyState === 'interactive') {
+				return absSrc(script);
+			}
+		}
+	}
+
+	// Define a module
+	global.define = function(factory) {
+		var currentScript = getCurrentScript();
+
+		if (currentScript) {
+			// Save the module
+			Module.save(currentScript, factory);
+		} else {
+			// Save the module in script's onload event
+			currentFactorys.push(factory);
+		}
+	};
+
+	// An empty object to determine if a CMD loader exists
+	global.define.cmd = {};
+
+	// A public API to load modules
+	gojs.use = function(ids, callback) {
+		Module.use(config.preload, function() {
+			Module.use(ids, callback, location.href);
+		}, config.base);
+	};
+
+	/**
+	 * Config
+	 */
+	var gojsNode = document.getElementById('gojsnode') || scripts[scripts.length - 1],
+		gojsSrc = absSrc(gojsNode);
+
+	config = {
+		// A map used for simplify long module identifications
+		alias: {},
+		// A map used for simplify long paths
+		paths: {},
+		// In some scenarios, module path may be determined during run time, it can be configured by the vars option
+		vars: {},
+		// A map used for path conversions
+		map: {},
+		// For the expansion of other loaders
+		loaders: {},
+		// Pre-load plugins or modules
+		preload: [],
+		// Debug mode. The default value is false
+		debug: false,
+		// The root path used for all module lookups
+		base: dirname(gojsSrc),
+		// The charset of module files
+		charset: 'utf-8'
+	};
 
 	// Configure
 	gojs.config = function(options) {
@@ -115,14 +518,16 @@
 
 		// Remove empty preload items
 		var preload = options.preload;
-		for (var i = preload.length - 1; i >= 0; --i) {
-			if (preload[i] === '') {
-				preload.splice(i, 1);
+		if (preload) {
+			for (var i = preload.length - 1; i >= 0; --i) {
+				if (preload[i] === '') {
+					preload.splice(i, 1);
+				}
 			}
 		}
 
 		// Normalize base option
-		var base = resolveUri(options.base || dirname(gojsSrc), location.href);
+		var base = absUri(options.base || dirname(gojsSrc), location.href);
 		if (base.slice(-1) !== '/') {
 			base += '/';
 		}
@@ -148,368 +553,6 @@
 			config[key] = curr;
 		}
 	};
-
-	/**
-	 * Loader
-	 */
-	var moduleMap = {},
-		loadedMap = {},
-		mapCache = {},
-		currentFactorys = [],
-		head = document.head || document.getElementsByTagName('head')[0];
-
-	// Return the url of the current script
-	function getCurrentScript() {
-
-		// Chrome
-		if (document.currentScript) {
-			return absSrc(document.currentScript);
-		}
-
-		// IE 6-9
-		for (var i = 0, l = scripts.length; i < l; ++i) {
-			var script = scripts[i];
-			if (script.readyState === 'interactive') {
-				return absSrc(script);
-			}
-		}
-	}
-
-	// Convert ID to URI based on referer
-	function id2Uri(id, referer) {
-		var uri = config.alias[id] || id,
-			paths = config.paths,
-			vars = config.vars,
-			key;
-
-		// Parse paths
-		for (key in paths) {
-			if (uri.indexOf(key + '/') === 0) {
-				uri = uri.replace(key, paths[key]);
-				break;
-			}
-		}
-
-		// Parse vars
-		for (key in vars) {
-			if (uri.indexOf('{' + key + '}') >= 0) {
-				uri = uri.replace('{' + key + '}', vars[key]);
-			}
-		}
-
-		// Get the absolute uri
-		uri = resolveUri(uri, referer);
-
-		// If the uri ends with `#`, just return it without `#`
-		if (uri.slice(-1) === '#') {
-			uri = uri.substring(0, uri.length - 1);
-		}
-		// Add `.js` extension
-		else if (uri.indexOf('?') < 0 && !/(\.js(on)?|\.css|\/)$/.test(uri)) {
-			uri += '.js';
-		}
-		return uri;
-	}
-
-	// Convert URI to ID
-	function uri2Id(uri) {
-		var id = uri.replace(config.base, '');
-		if (id.slice(-3) === '.js') {
-			id = id.substring(0, id.length - 3);
-		}
-		return id;
-	}
-
-	// Return a module according to uri parameter
-	function getModuleByUri(uri) {
-		// If the module is not exists, initialize it
-		moduleMap[uri] = moduleMap[uri] || {
-			id: uri2Id(uri),
-			uri: uri,
-			factory: null,
-			exports: null,
-			dependencies: [],
-			// Who depends on me
-			_waitings: [],
-			// The number of unloaded dependencies
-			_remains: 0
-		};
-		return moduleMap[uri];
-	}
-
-	// Return the matching loader
-	function getLoaderByUri(uri) {
-		var re,
-			loader = JSLoader,
-			loaders = config.loaders;
-		for (var key in loaders) {
-			re = new RegExp('\\.' + key + '(\\?|$)');
-			if (re.test(uri)) {
-				loader = loaders[key];
-				break;
-			}
-		}
-		return loader;
-	}
-
-	// Load module by uri
-	function loadModule(uri) {
-		// Prevent multiple loading
-		if (loadedMap[uri]) {
-			return;
-		}
-		loadedMap[uri] = true;
-
-		// begin to load the module
-		var module = getModuleByUri(uri),
-			loader = getLoaderByUri(uri);
-		loader.call(null, uri, function(exports) {
-			// Save loader's exports
-			if (exports) {
-				module.exports = exports;
-			}
-			// Modules not in CMD standard
-			if (module._waitings && module.exports === null) {
-				emitLoad(module);
-			}
-		});
-
-		return module;
-	}
-
-	// Create script element
-	function JSLoader(uri, expose) {
-		var charset = config.charset,
-			node = document.createElement('script');
-		node.src = uri;
-		node.async = true;
-		node.charset = isFunction(charset) ? charset(uri) : charset;
-		node.onload = node.onerror = node.onreadystatechange = function() {
-			if (!node.readyState || /loaded|complete/.test(node.readyState)) {
-				// Save modules if currentScript is unable to get
-				for (var i = 0, l = currentFactorys.length; i < l; ++i) {
-					saveModule(uri, currentFactorys[i]);
-				}
-				currentFactorys = [];
-
-				// Ensure only run once and handle memory leak in IE
-				node.onload = node.onerror = node.onreadystatechange = null;
-				if (!config.debug) {
-					head.removeChild(node);
-				}
-				node = null;
-
-				expose();
-			}
-		};
-		head.insertBefore(node, head.firstChild);
-	}
-
-	// Call this function when module is loaded
-	function emitLoad(module) {
-		var factory = module.factory,
-			waitings = module._waitings;
-
-		// Save exports if factory is a function
-		if (typeof factory === 'function') {
-			var require = requireFactory(module.uri);
-			var exports = factory(require, module.exports, module);
-			module.exports = exports || module.exports;
-		}
-
-		// Notify waiting modules or callbacks
-		for (var i = waitings.length - 1; i >= 0; --i) {
-			var waiting = waitings[i];
-			if (--waiting._remains === 0) {
-				if (typeof waiting === 'function') {
-					emitCallback(waiting);
-				} else {
-					emitLoad(waiting);
-				}
-			}
-		}
-
-		// Reduce memory
-		delete module._waitings;
-		delete module._remains;
-	}
-
-	// Call this function when callback's dependencies are loaded
-	function emitCallback(callback) {
-		var args = [],
-			uri = callback.uri,
-			deps = callback.dependencies;
-
-		// Resolve arguments
-		for (var i = deps.length - 1; i >= 0; --i) {
-			var depUri = id2Uri(deps[i], uri);
-			args.unshift(getModuleByUri(depUri).exports);
-		}
-
-		callback.apply(null, args);
-
-		// Reduce memory
-		delete callback._remains;
-	}
-
-	// Parse the mapping uri
-	function parseMap(uri, referer) {
-		var map = config.map,
-			idList, uriList = [];
-
-		// Check if the id matching in the map
-		for (var key in map) outer: {
-			idList = map[key];
-			for (var i = idList.length - 1; i >= 0; --i) {
-				if (id2Uri(idList[i], referer) === uri) {
-					break outer;
-				}
-			}
-			key = null;
-		}
-
-		// Save the map cache
-		if (key) {
-			key = id2Uri(key, referer);
-			for (var j = idList.length - 1; j >= 0; --j) {
-				uriList.unshift(id2Uri(idList[j], referer));
-			}
-			mapCache[key] = uriList;
-			return key;
-		}
-		return uri;
-	}
-
-	// Resolve dependencies
-	function resolveDeps(waiting) {
-		var deps = waiting.dependencies,
-			uri = waiting.uri;
-
-		waiting._remains = deps.length;
-
-		// check if the dependence is loaded
-		for (var i = deps.length - 1; i >= 0; --i) {
-			var depUri = id2Uri(deps[i], uri);
-			var depModule = getModuleByUri(depUri);
-			loadModule(parseMap(depUri, uri));
-
-			if (depModule._remains === undefined) {
-				--waiting._remains;
-			} else {
-				depModule._waitings.push(waiting);
-			}
-		}
-
-		// If all the dependencies are loaded
-		if (waiting._remains === 0) {
-			if (isFunction(waiting)) {
-				emitCallback(waiting);
-			} else {
-				emitLoad(waiting);
-			}
-		}
-	}
-
-	// Load module in async mode
-	function async(ids, callback, referer) {
-
-		if (isString(ids)) {
-			ids = [ids];
-		}
-
-		callback = callback || function() {};
-
-		callback.dependencies = ids;
-		callback.uri = referer;
-
-		resolveDeps(callback);
-	}
-
-	// A factory to create require function
-	function requireFactory(uri) {
-
-		// The require function
-		function require(id) {
-			return getModuleByUri(id2Uri(id, uri)).exports;
-		}
-
-		// Convert ID to URI according to current script
-		require.resolve = function(id) {
-			return id2Uri(id, uri);
-		};
-
-		// Load module in async mode according to current script
-		require.async = function(ids, callback) {
-			async(ids, callback, uri);
-		};
-
-		return require;
-	}
-
-	// Parse the dependencies in factory
-	function parseDeps(factory) {
-		var re = /(?:[^\$\w\.])require\( *['"]([^'"]+)['"] *\)/g,
-			code = factory.toString(),
-			deps = [];
-
-		code.replace(re, function(_, $1) {
-			deps.push($1);
-		});
-
-		return deps;
-	}
-
-	// Save a module
-	function saveModule(uri, factory) {
-
-		// Reduce the mapping uri
-		var index,
-			list = mapCache[uri];
-		if (list) {
-			index = list.index || 0;
-			uri = list[index];
-			list.index = index + 1;
-		}
-
-		// Save the module
-		var module = getModuleByUri(uri);
-		module.factory = factory;
-
-		if (typeof factory === 'function') {
-			module.exports = {};
-			module.dependencies = parseDeps(factory);
-		} else {
-			module.exports = factory;
-		}
-
-		resolveDeps(module);
-	}
-
-	// Define a module
-	global.define = function(factory) {
-		var currentScript = getCurrentScript();
-
-		if (currentScript) {
-			// Save the module if currentScript is able to get
-			saveModule(currentScript, factory);
-		} else {
-			// Save the module in script's onload event
-			currentFactorys.push(factory);
-		}
-	};
-
-	// An empty object to determine if a CMD loader exists
-	global.define.cmd = {};
-
-	// A Public API to load modules
-	gojs.use = function(ids, callback) {
-		async(config.preload, function() {
-			async(ids, callback, location.href);
-		});
-	};
-
-	// For developer
-	gojs.cache = moduleMap;
 
 	// Auto initialization
 	var main = gojsNode.getAttribute('data-main');
