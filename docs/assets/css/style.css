@@ -37,7 +37,12 @@ h6 {
 	font-size: 12px;
 	line-height: 20px;
 }
-ul{
+hr {
+	border: 0;
+	border-top: 1px solid #ccc;
+	border-bottom: 1px solid #fff;
+}
+ol, ul {
 	margin: 1em 0;
 	padding-left: 2em;
 }
@@ -73,7 +78,7 @@ pre code {
 	border: 0;
 	padding: 0;
 }
-strong{
+strong {
 	color: #222;
 }
 a {
@@ -85,6 +90,9 @@ a:hover {
 	outline: 0;
 	color: #014384;
 	text-decoration: underline;
+}
+img {
+	border: 0;
 }
 
 .navbar {
@@ -120,7 +128,7 @@ a:hover {
 	padding-top: 60px;
 }
 
-.loading{
+.loading {
 	margin: 30px 0;
 	font-size: 24px;
 	font-weight: bold;
@@ -135,7 +143,7 @@ a:hover {
 	padding: 40px 0;
 }
 
-.footer .cat{
+.footer .cat {
 	float: right;
 }
 
