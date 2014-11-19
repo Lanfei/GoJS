@@ -1,22 +1,22 @@
 define(function(require, exports) {
 
-	var loginElement;
-
 	function initPage() {
 		require('../../css/login.css');
-		loginElement = document.createElement('div');
-		loginElement.innerHTML = '<div id="login" title="click to close">This is a login module with an extra `.css` file.</div>';
-		document.body.appendChild(loginElement);
+		
+		var node = document.createElement('div');
+		node.id = 'login';
+		node.innerHTML = '<h2>Sign in</h2><form><input type="text" placeholder="Username or Email" /><input type="password" placeholder="Password" /></form><button type="submit">Sign in</button><button id="close">Close</button>';
+		document.body.appendChild(node);
 	}
 
 	function initEvent() {
-		loginElement.onclick = function() {
-			this.style.display = 'none';
+		document.getElementById('close').onclick = function() {
+			document.getElementById('login').style.display = 'none';
 		};
 	}
 
 	function show() {
-		loginElement.style.display = 'block';
+		document.getElementById('login').style.display = 'block';
 	}
 
 	exports.show = show;

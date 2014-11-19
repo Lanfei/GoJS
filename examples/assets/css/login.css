@@ -1,15 +1,24 @@
 #login{
-	top: 40%;
-	left: 50%;
-	width: 400px;
-	height: 300px;
 	padding: 10px;
-	position: absolute;
+	max-width: 360px;
 	text-align: center;
-	line-height: 300px;
 	border-radius: 4px;
-	margin-top: -200px;
-	margin-left: -300px;
 	background: #f5f5f5;
 	border: 1px solid #ccc;
+	box-sizing: border-box;
+}
+
+#login input{
+	width: 70%;
+	margin: 5px;
+	height: 25px;
+	padding: 2px 8px;
+	background: #f9f9f9;
+	border: 1px solid #ccc;
+}
+
+#login button{
+	margin: 5px;
+	height: 30px;
+	padding: 2px 8px;
 }
