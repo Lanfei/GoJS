@@ -4,7 +4,7 @@ define(function(require){
 
 	// Load `foo` in async mode
 	require.async('./foo', function(foo){
-		println('async: ' + foo.bar);
+		println('Async loading: foo.bar = "' + foo.bar + '"');
 	});
 
 });
