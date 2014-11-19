@@ -1,5 +1,5 @@
 /**
- * GoJS 1.5.0
+ * GoJS 1.5.1
  * https://github.com/Lanfei/GoJS
  * A JavaScript module loader following CMD standard
  * [Common Module Definition](https://github.com/cmdjs/specification/blob/master/draft/module.md)
@@ -16,7 +16,7 @@
 
 	// Current version of GoJS
 	var gojs = global.gojs = {
-		version: '1.5.0'
+		version: '1.5.1'
 	};
 
 	// Config Data of GoJS
@@ -273,6 +273,10 @@
 
 	// Parse the dependencies in factory
 	Module.prototype.resolve = function() {
+		if (!isFunction(this.factory)) {
+			return [];
+		}
+
 		var re = /(?:[^\$\w\.])require\( *['"]([^'"]+)['"] *\)/g,
 			code = this.factory.toString(),
 			deps = [];
@@ -361,6 +365,7 @@
 
 		// Create the require function
 		var uri = this.uri;
+
 		function require(id) {
 			return Module.get(id2Uri(id, uri)).exec();
 		}
@@ -373,9 +378,9 @@
 
 		// Execute the factory
 		var factory = this.factory;
-		if (typeof factory === 'function') {
-			var exports = factory(require, this.exports, this);
-			this.exports = exports || this.exports;
+		if (isFunction(factory)) {
+			var exports = factory(require, this.exports = {}, this);
+			this.exports = (exports !== undefined ? exports : this.exports);
 		} else {
 			this.exports = factory;
 		}
