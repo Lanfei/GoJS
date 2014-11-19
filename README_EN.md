@@ -110,6 +110,6 @@ GoJS is available under the terms of the [MIT License](https://github.com/Lanfei
 
 ##What's More
 
->Finally, a tribute to [RequireJS](http://requirejs.org) and [Sea.js](http://seajs.org), but also to pay tribute to all the people who work dedicated to open source.
+>Finally, a tribute to <a target="_blank" href="http://requirejs.org">RequireJS</a> and <a target="_blank" href="http://seajs.org">Sea.js</a>, but also to pay tribute to all the people who work dedicated to open source.
 
 ——[Lanfei](http://www.clanfei.com/) on November 5, 2014

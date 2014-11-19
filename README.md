@@ -109,6 +109,6 @@ GoJS遵循 [MIT 协议](https://github.com/Lanfei/GoJS/blob/master/LICENSE)，�
 
 ##说点什么
 
-> 最后，向 [RequireJS](http://requirejs.org) 和 [Sea.js](http://seajs.org) 致敬，也向所有投身于开源工作的自由人致敬。
+> 最后，向 <a target="_blank" href="http://requirejs.org">RequireJS</a> 和 <a target="_blank" href="http://seajs.org">Sea.js</a> 致敬，也向所有投身于开源工作的自由人致敬。
 
 ——[张耕畅](http://www.clanfei.com/)于2014年11月05日
