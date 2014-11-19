@@ -6,11 +6,11 @@
 	<title>GoJS - Merge</title>
 </head>
 <body>
+	<p>foo.js and bar.js are merged into foo-bar.min.js</p>
 	<script id="gojsnode" src="../src/go.js"></script>
 	<script>
 	gojs.config({
 		map: {
-			// foo.js and bar.js are merged into foo-bar.min.js
 			'./foo-bar.min': ['./foo', './bar']
 		}
 	});
