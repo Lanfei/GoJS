@@ -6,7 +6,7 @@ GoJS is a JavaScript module loader for web, which can organize your codes and mo
 
 ###1st Step, Initialize GoJS
 
-```
+```html
 <!--
 data-main: The entry module
 -->
@@ -15,7 +15,7 @@ data-main: The entry module
 
 You can also [configure it](http://lanfei.github.io/GoJS/docs/index.html#config) before the initialization:
 
-```
+```html
 <script src="path/to/go.js"></script>
 <script>
 gojs.config({
@@ -28,7 +28,7 @@ gojs.use('main');
 
 ###2nd Step, Write Modules Following [CMD Standard](https://github.com/cmdjs/specification/blob/master/draft/module.md)
 
-```
+```js
 // main.js
 define(function(require, exports, module){
 
@@ -36,7 +36,9 @@ define(function(require, exports, module){
 	foo.bar();
 
 });
+```
 
+```js
 // foo.js
 define(function(require, exports, module){
 	

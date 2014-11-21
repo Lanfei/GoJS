@@ -6,16 +6,16 @@ GoJS 是一个适用于 Web 的 JavaScript 模块加载器，它可以帮助你�
 
 ###第一步，初始化GoJS
 
-```
+```html
 <!--
 data-main: 入口模块
 -->
 <script id="gojsnode" src="path/to/go.js" data-main="main"></script>
 ```
 
-或者[配置](http://lanfei.github.io/GoJS/docs/index.html#config)后再初始化入口模块：
+或者 [进行配置](http://lanfei.github.io/GoJS/docs/index.html#config) 后再初始化入口模块：
 
-```
+```html
 <script src="path/to/go.js"></script>
 <script>
 gojs.config({
@@ -28,7 +28,7 @@ gojs.use('main');
 
 ###第二步，编写遵循 [CMD规范](http://lanfei.github.io/GoJS/docs/index.html#cmd) 的模块
 
-```
+```js
 // main.js
 define(function(require, exports, module){
 
@@ -36,7 +36,9 @@ define(function(require, exports, module){
 	foo.bar();
 
 });
+```
 
+```
 // foo.js
 define(function(require, exports, module){
 	
