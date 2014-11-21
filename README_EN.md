@@ -18,8 +18,9 @@ You can also [configure it](http://lanfei.github.io/GoJS/docs/index.html#config)
 ```html
 <script src="path/to/go.js"></script>
 <script>
+// Configure GoJS
 gojs.config({
-	// Some options
+	// some options
 });
 // Load main module
 gojs.use('main');
@@ -41,14 +42,10 @@ define(function(require, exports, module){
 ```js
 // foo.js
 define(function(require, exports, module){
-	
-	function bar(){
+
+	exports.bar = function(){
 		// your codes
 	}
-
-	return {
-		bar: bar
-	};
 
 });
 ```

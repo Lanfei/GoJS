@@ -18,6 +18,7 @@ data-main: 入口模块
 ```html
 <script src="path/to/go.js"></script>
 <script>
+// 配置 GoJS
 gojs.config({
 	// 一些配置选项
 });
@@ -41,14 +42,10 @@ define(function(require, exports, module){
 ```js
 // foo.js
 define(function(require, exports, module){
-	
-	function bar(){
+
+	exports.bar = function(){
 		// your codes
 	}
-
-	return {
-		bar: bar
-	};
 
 });
 ```
