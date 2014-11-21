@@ -38,7 +38,7 @@ define(function(require, exports, module){
 });
 ```
 
-```
+```js
 // foo.js
 define(function(require, exports, module){
 	
