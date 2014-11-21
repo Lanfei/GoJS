@@ -48,8 +48,8 @@ GoJS 是一个适用于 Web 的 JavaScript 模块加载器，它可以帮助你�
 
 ##插件
 
-- [gojs-css](#gojs-css)
-- [gojs-json](#gojs-json)
+- [go-css](#go-css)
+- [go-json](#go-json)
 
 最后，向 <a target="_blank" href="http://requirejs.org">RequireJS</a> 和 <a target="_blank" href="http://seajs.org">Sea.js</a> 致敬，也向所有投身于开源工作的自由人致敬。
 
@@ -881,21 +881,25 @@ gojs.config({
 	vars: {
 		'locale': 'zh-cn'
 	},
-	// 映射配置
-	map: {
+	// 路由配置
+	routers: {
 		'foo-bar.min': ['foo', 'bar']
 	},
-	// 预加载项
-	preload: [
-		'jquery',
-		'./i18n/{locale}'
-	],
+	// 映射配置
+	map: [
+		'.js': '-debug.js'
+	]
 	// 加载器配置
 	loaders: [
 		txt: function(uri, exports){
 			// ...
 			// exports(exports);
 		}
+	],
+	// 预加载项
+	preload: [
+		'jquery',
+		'./i18n/{locale}'
 	],
 	// 调试模式
 	debug: false,
@@ -963,9 +967,9 @@ define(function(require) {
 });
 ```
 
-###map `Object`
+###routers `Object`
 
-当项目发布上线时，常常需要通过合并压缩 JS 文件来减少 HTTP 连接数，这时可以通过 `map` 来配置。
+当项目发布上线时，常常需要通过合并压缩 JS 文件来减少 HTTP 连接数，这时可以通过 `routers` 来配置合并模块的分发。
 
 ```js
 gojs.config({
@@ -980,6 +984,42 @@ define(function(require) {
 	// 加载的是 ./foo-bar.min.js
 	var foo = require('./foo.js');
 	var bar = require('./bar.js');
+});
+```
+
+###map `Array`
+
+该配置可对模块路径进行映射修改，可用于路径转换、在线调试等。
+
+```js
+gojs.config({
+	map: [
+		// 这里的第一项可以是正则
+		['.js', '-debug.js']
+	]
+});
+```
+
+```js
+define(function(require) {
+	var a = require('./a');
+	// => 加载的是 ./a-debug.js
+});
+```
+
+###loaders `Array`
+
+当需要将一些非 JS 文件作为模块来加载和管理时，可以通过 loaders 来配置自定义的加载器。
+
+```js
+gojs.config({
+	loaders: [
+		// 这里的第一项可以是正则
+		['.txt', function(uri, expose){
+			// some codes
+			expose(exports);
+		}]
+	]
 });
 ```
 
@@ -1013,30 +1053,13 @@ define(function(require, exports) {
 });
 ```
 
-###loaders `Array`
-
-当需要将一些非 JS 文件作为模块来加载和管理时，可以通过 loaders 来配置自定义的加载器。
-
-```js
-gojs.config({
-	loaders: [
-		txt: function(uri, expose){
-			// some codes
-			expose(exports);
-		}
-	]
-});
-```
-
 ###debug `Boolean`
 
-当 `debug` 的值为 `true` 时，加载器不会删除动态插入的 script 标签，默认为 `false`。
+当 `debug` 的值为 `true` 时，加载器不会删除动态插入的 script 标签，也不会根据路由配置进行模块加载和分发，这对项目构建前的调试非常有用。默认为 `false`。
 
 ###base `String`
 
 在解析顶级标识时，会相对 `base` 路径来解析，详情请参阅 [模块标识](#identifier)。
-
-建议尽量在模块中使用相对标识，这样只需要知道所依赖的模块相对于当前模块的路径即可，而不需要考虑外部环境变化。
 
 ###charset `String | Function`
 
@@ -1047,7 +1070,7 @@ gojs.config({
 ```js
 gojs.config({
 	charset: function(url){
-		if(url.indexOf('http://example.com/') >= 0){
+		if(url.indexOf('http://example.com/') === 0){
 			return 'gbk';
 		}
 		return 'utf-8';
@@ -1072,7 +1095,7 @@ gojs.config({
 });
 ```
 
-独立成一个文件时，一般需要通过 `script` 标签在页面中同步引入。
+独立成一个文件时，一般需要通过 `script` 标签在页面中同步引入，或者直接与 go.js 一起合并压缩。
 		</textarea>
 	</div>
 	<div id="reform" class="section">
@@ -1174,15 +1197,15 @@ define(function(require, exports, module) {
 ```
 		</textarea>
 	</div>
-	<div id="gojs-css" class="section">
+	<div id="go-css" class="section">
 		<textarea class="markdown">
-##gojs-css
+##go-css
 
-有时候可能需要将 CSS 文件也作为模块进行加载和管理，这时候可以使用 gojs-css 插件。
+有时候可能需要将 CSS 文件也作为模块进行加载和管理，这时候可以使用 go-css 插件。
 
 ```js
 gojs.config({
-	preload: ['gojs-css']
+	preload: ['go-css']
 });
 ```
 
@@ -1196,15 +1219,15 @@ define(function(require){
 ```
 		</textarea>
 	</div>
-	<div id="gojs-json" class="section">
+	<div id="go-json" class="section">
 		<textarea class="markdown">
-##gojs-json
+##go-json
 
-有时候可能需要将 JSON 文件也作为模块进行加载和管理，这时候可以使用 gojs-json 插件。
+有时候可能需要将 JSON 文件也作为模块进行加载和管理，这时候可以使用 go-json 插件。
 
 ```js
 gojs.config({
-	preload: ['gojs-json']
+	preload: ['go-json']
 });
 ```
 

@@ -1,6 +1,7 @@
 /**
- * GoJS 1.5.2
+ * GoJS 1.6.0
  * https://github.com/Lanfei/GoJS
+ * (c) 2014 [Lanfei](http://www.clanfei.com/)
  * A JavaScript module loader following CMD standard
  * [Common Module Definition](https://github.com/cmdjs/specification/blob/master/draft/module.md)
  */
@@ -16,7 +17,7 @@
 
 	// Current version of GoJS
 	var gojs = global.gojs = {
-		version: '1.5.2'
+		version: '1.6.0'
 	};
 
 	// Config Data of GoJS
@@ -94,7 +95,8 @@
 		var key, uri,
 			alias = config.alias,
 			paths = config.paths,
-			vars = config.vars;
+			vars = config.vars,
+			map = config.map;
 
 		// Parse alias
 		uri = config.alias[id] || id;
@@ -125,6 +127,17 @@
 		else if (uri.indexOf('?') < 0 && !/(\.js(on)?|\.css|\/)$/.test(uri)) {
 			uri += '.js';
 		}
+
+		// Parse Map
+		for (var i = map.length - 1; i >= 0; --i) {
+			var rule = map[i];
+			if (isFunction(rule)) {
+				uri = rule(uri);
+			} else {
+				uri = uri.replace(rule[0], rule[1]);
+			}
+		}
+
 		return uri;
 	}
 
@@ -140,7 +153,7 @@
 	/**
 	 * Module
 	 */
-	var mapCache = {},
+	var routeCache = {},
 		moduleCache = {},
 		fetchedList = {};
 
@@ -197,12 +210,12 @@
 
 	// Save the meta data to the cache
 	Module.save = function(uri, factory) {
-		// Reduce the mapping uri
-		var list = mapCache[uri];
-		if (list) {
+		// Reduce the routing uri
+		var list;
+		if (!config.debug && (list = routeCache[uri])) {
 			var current = list.shift();
 			if (list.length === 0) {
-				delete mapCache[uri];
+				delete routeCache[uri];
 			}
 			uri = current;
 		}
@@ -215,14 +228,14 @@
 		module.load();
 	};
 
-	// Parse the mapping uri
+	// Parse the routing uri
 	Module.parse = function(uri, referer) {
-		var map = config.map,
+		var routers = config.routers,
 			idList, uriList = [];
 
-		// Check if the id matching in the map
-		for (var key in map) outer: {
-			idList = map[key];
+		// Check if the id matching in the router map
+		for (var key in routers) outer: {
+			idList = routers[key];
 			for (var i = idList.length - 1; i >= 0; --i) {
 				if (id2Uri(idList[i], referer) === uri) {
 					break outer;
@@ -231,15 +244,15 @@
 			key = null;
 		}
 
-		// Update the map cache
+		// Update the router cache
 		if (key) {
 			key = id2Uri(key, referer);
-			// If there is no cache, then save the map cache
-			if (!mapCache[key]) {
+			// If there is no cache, then save it
+			if (!routeCache[key]) {
 				for (var j = idList.length - 1; j >= 0; --j) {
 					uriList.unshift(id2Uri(idList[j], referer));
 				}
-				mapCache[key] = uriList;
+				routeCache[key] = uriList;
 			}
 			return key;
 		}
@@ -307,11 +320,13 @@
 				--this.remains;
 			} else {
 				module.waitings.push(this);
-				// Parse the mapping module
-				var mappingUri = Module.parse(uri, referer);
-				if (mappingUri !== uri) {
-					// Do not save the mapping module to the cache
-					module = new Module(mappingUri);
+				// Parse the routing module
+				if (!config.debug) {
+					var routingUri = Module.parse(uri, referer);
+					if (routingUri !== uri) {
+						// Do not save the routing module to the cache
+						module = new Module(routingUri);
+					}
 				}
 				module.fetch();
 			}
@@ -409,16 +424,16 @@
 	// Return the matching loader
 	function parseLoader(uri) {
 		var re,
-			loader = JSLoader,
 			loaders = config.loaders;
-		for (var key in loaders) {
-			re = new RegExp('\\.' + key + '(\\?|$)');
-			if (re.test(uri)) {
-				loader = loaders[key];
-				break;
+		for (var i = loaders.length - 1; i >= 0; --i) {
+			var loader = loaders[i];
+			if (isFunction(loader)) {
+				return loader(uri);
+			} else if (uri !== uri.replace(loader[0], '')) {
+				return loader[1];
 			}
 		}
-		return loader;
+		return JSLoader;
 	}
 
 	// Create script element
@@ -502,10 +517,12 @@
 		paths: {},
 		// In some scenarios, module path may be determined during run time, it can be configured by the vars option
 		vars: {},
-		// A map used for path conversions
-		map: {},
+		// A map used for routing merged modules
+		routers: {},
+		// A array used for path conversions
+		map: [],
 		// For the expansion of other loaders
-		loaders: {},
+		loaders: [],
 		// Pre-load plugins or modules
 		preload: [],
 		// Debug mode. The default value is false
@@ -545,7 +562,7 @@
 			var curr = options[key];
 			var prev = config[key];
 
-			if (curr) {
+			if (prev && curr) {
 				if (isArray(curr)) {
 					curr = prev.concat(curr);
 				} else if (isObject(curr)) {

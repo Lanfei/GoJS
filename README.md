@@ -13,50 +13,14 @@ data-main: 入口模块
 <script id="gojsnode" src="path/to/go.js" data-main="main"></script>
 ```
 
-或者使用更高级的配置方式：
+或者[配置](http://lanfei.github.io/GoJS/docs/index.html#config)后再初始化入口模块：
 
 ```
 <script src="path/to/go.js"></script>
 <script>
-// 配置GoJS（以下参数均为可选）
 gojs.config({
-	// 用于简化较长的模块标识
-	alias: {
-		'jquery': 'http://example.com/path/to/lib/jquery-2.1.1.min.js'
-	},
-	// 用于简化较长的模块目录
-	paths: {
-		'deepdir': 'path/to/a/deep/dir'
-	},
-	// 某些场景下，模块路径在运行时才能确定，这时可以通过 vars 选项来配置
-	vars: {
-		'locale': document.location.hash || 'zh-cn'
-	},
-	// 模块路径映射表，用于合并压缩后的路径转换
-	map: {
-		// 如 foo.js 与 bar.js 合并压缩为 foo-bar.min.js
-		'foo-bar.min': ['foo', 'bar']
-	},
-	// 用于拓展 JS 模块以外的加载器
-	loaders: [
-		txt: function(uri, expose){
-			// ...
-			// expose(exports);
-		}
-	],
-	// 需要预加载的插件或模块
-	preload: [
-		'jquery',
-		'./i18n/{locale}'
-	],
-	// 调试模式下，加载器不会删除动态插入的 script 标签
-	debug: false,
-	// 模块文件的基础路径
-	base: 'path/to/base/',
-	// 模块文件的编码
-	charset: 'utf-8'
+	// 一些配置选项
 });
-
 // 加载入口模块
 gojs.use('main');
 </script>

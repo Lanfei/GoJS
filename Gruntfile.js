@@ -13,8 +13,8 @@ module.exports = function(grunt) {
 				default: {
 					files: {
 						'dist/go.js': 'src/go.js',
-						'dist/gojs-css.js': 'src/gojs-css.js',
-						'dist/gojs-json.js': 'src/gojs-json.js'
+						'dist/go-css.js': 'src/go-css.js',
+						'dist/go-json.js': 'src/go-json.js'
 					}
 				}
 			}

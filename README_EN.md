@@ -13,51 +13,14 @@ data-main: The entry module
 <script id="gojsnode" src="path/to/go.js" data-main="main"></script>
 ```
 
-You can also use advanced configuration:
+You can also [configure it](http://lanfei.github.io/GoJS/docs/index.html#config) before the initialization:
 
 ```
 <script src="path/to/go.js"></script>
 <script>
-// Configure GoJS (all the following parameters are optional)
 gojs.config({
-	// A map used for simplify long module identifications
-	alias: {
-		'jquery': 'http://example.com/path/to/lib/jquery-2.1.1.min.js'
-	},
-	// A map used for simplify long paths
-	paths: {
-		'deepdir': 'path/to/a/deep/dir'
-	},
-	// In some scenarios, module path may be determined during run time, it can be configured by the vars option
-	vars: {
-		'locale': document.location.hash || 'zh-cn'
-	},
-	// A map used for path conversions
-	map: {
-		// For example, foo.js and bar.js were merged into foo-bar.min.js
-		'foo-bar.min': ['foo', 'bar']
-	},
-	// For the expansion of other loaders
-	loaders: [
-		txt: function(uri, expose){
-			// ...
-			// expose(exports);
-		}
-	],
-	// Pre-load plugins or modules
-	preload: [
-		'jquery',
-		'./gojs-json',
-		'./i18n/{locale}'
-	],
-	// Debug mode
-	debug: false,
-	// The root path used for all module lookups
-	base: 'path/to/base/',
-	// The charset of module files
-	charset: 'utf-8'
+	// Some options
 });
-
 // Load main module
 gojs.use('main');
 </script>
