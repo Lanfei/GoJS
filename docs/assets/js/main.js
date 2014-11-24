@@ -1,9 +1,3 @@
-gojs.config({
-	map: {
-		'./marked-prettify': ['./marked', './prettify']
-	}
-});
-
 define(function(require) {
 
 	var $ = require('./jquery');
