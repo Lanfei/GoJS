@@ -1,5 +1,5 @@
 /**
- * gojs-css.js
+ * go-css.js
  * https://github.com/Lanfei/GoJS
  * A plugin for GoJS to load style files
  */
@@ -28,8 +28,8 @@
 	}
 
 	gojs.config({
-		loaders: {
-			css: CSSLoader
-		}
+		loaders: [
+			['.css', CSSLoader]
+		]
 	});
 })();

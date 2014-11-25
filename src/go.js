@@ -1,5 +1,5 @@
 /**
- * GoJS 1.6.0
+ * GoJS 1.6.1
  * https://github.com/Lanfei/GoJS
  * (c) 2014 [Lanfei](http://www.clanfei.com/)
  * A JavaScript module loader following CMD standard
@@ -17,7 +17,7 @@
 
 	// Current version of GoJS
 	var gojs = global.gojs = {
-		version: '1.6.0'
+		version: '1.6.1'
 	};
 
 	// Config Data of GoJS
@@ -423,12 +423,15 @@
 
 	// Return the matching loader
 	function parseLoader(uri) {
-		var re,
+		var re, fn,
 			loaders = config.loaders;
 		for (var i = loaders.length - 1; i >= 0; --i) {
 			var loader = loaders[i];
 			if (isFunction(loader)) {
-				return loader(uri);
+				fn = loader(uri);
+				if (fn) {
+					return fn;
+				}
 			} else if (uri !== uri.replace(loader[0], '')) {
 				return loader[1];
 			}

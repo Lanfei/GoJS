@@ -1,5 +1,5 @@
 /**
- * gojs-css.js
+ * go-json.js
  * https://github.com/Lanfei/GoJS
  * A plugin for GoJS to load JSON files
  */
@@ -41,8 +41,8 @@
 	}
 
 	gojs.config({
-		loaders: {
-			css: JSONLoader
-		}
+		loaders: [
+			['.json', JSONLoader]
+		]
 	});
 })();
