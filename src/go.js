@@ -1,5 +1,5 @@
 /**
- * GoJS 1.6.1
+ * GoJS 1.6.2
  * https://github.com/Lanfei/GoJS
  * (c) 2014 [Lanfei](http://www.clanfei.com/)
  * A JavaScript module loader following CMD standard
@@ -17,7 +17,7 @@
 
 	// Current version of GoJS
 	var gojs = global.gojs = {
-		version: '1.6.1'
+		version: '1.6.2'
 	};
 
 	// Config Data of GoJS
@@ -358,9 +358,9 @@
 			this.callback.apply(null, args);
 		} else {
 			// Notify waiting modules
-			var waitings = this.waitings;
-			for (var j = waitings.length - 1; j >= 0; --j) {
-				var module = waitings[j];
+			var module,
+				waitings = this.waitings;
+			while (module = waitings.shift()) {
 				if (--module.remains === 0) {
 					module.onload();
 				}
