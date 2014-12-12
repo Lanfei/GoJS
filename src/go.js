@@ -1,5 +1,5 @@
 /**
- * GoJS 1.6.2
+ * GoJS 1.7.0
  * https://github.com/Lanfei/GoJS
  * (c) 2014 [Lanfei](http://www.clanfei.com/)
  * A JavaScript module loader following CMD standard
@@ -17,7 +17,7 @@
 
 	// Current version of GoJS
 	var gojs = global.gojs = {
-		version: '1.6.2'
+		version: '1.7.0'
 	};
 
 	// Config Data of GoJS
@@ -502,9 +502,12 @@
 
 	// A public API to load modules
 	gojs.use = function(ids, callback) {
-		Module.use(config.preload, function() {
+		Module.use(config.preload, null, config.base);
+		// Prevent multiple loading(Lazy Function Definition)
+		gojs.use = function(ids, callback) {
 			Module.use(ids, callback, location.href);
-		}, config.base);
+		};
+		gojs.use.apply(null, arguments);
 	};
 
 	/**
