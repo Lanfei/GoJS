@@ -715,6 +715,29 @@ gojs.use('js/main');
 	http://example.com/assets/
 ```
 
+**小提示**：某些情况下，可能需要使用相对路径来做顶级标识，这时可以在前面加空格：
+
+```html
+<script>
+// 假设 base 路径是：http://example.com/assets/js/lib/
+gojs.use(' ../foo/main');
+	// => http://example.com/assets/js/foo/main.js
+</script>
+```
+
+当然，更好的做法是更加恰当地配置基础路径：
+
+```html
+<script>
+// 假设 GoJS 路径是：http://example.com/assets/js/lib/go.js
+gojs.config({
+	base: 'http://example.com/assets/js/'
+});
+gojs.use('foo/main');
+	// => http://example.com/assets/js/foo/main.js
+</script>
+```
+
 可以通过 `gojs.config` 来手工 [配置基础路径](#config)。
 
 ###普通路径
@@ -1247,7 +1270,16 @@ define(function(require){
 	Powered by <a target="_blank" href="http://www.clanfei.com">Lanfei</a>
 	<a class="cat" href="#">返回目录</a>
 </div>
+<script id="gojsnode" src="../src/go.js" data-main="./assets/js/main.js"></script>
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
 
-<script id="gojsnode" src="../src/go.js" data-base="" data-main="./assets/js/main.js"></script>
+  ga('create', 'UA-57981079-1', 'auto');
+  ga('send', 'pageview');
+
+</script>
 </body>
 </html>
