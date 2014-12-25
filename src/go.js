@@ -1,5 +1,5 @@
 /**
- * GoJS 1.7.0
+ * GoJS 1.7.1
  * https://github.com/Lanfei/GoJS
  * (c) 2014 [Lanfei](http://www.clanfei.com/)
  * A JavaScript module loader following CMD standard
@@ -17,7 +17,7 @@
 
 	// Current version of GoJS
 	var gojs = global.gojs = {
-		version: '1.7.0'
+		version: '1.7.1'
 	};
 
 	// Config Data of GoJS
@@ -42,7 +42,13 @@
 	 */
 	var DOT_RE = /\/\.\//g,
 		MULTI_SLASH_RE = /([^:/])\/+\//g,
-		DOUBLE_DOT_RE = /\/[^/]+\/\.\.\//;
+		DOUBLE_DOT_RE = /\/[^/]+\/\.\.\//,
+		TRIM_RE = /^\s+|\s+$/g;
+
+	// Strip whitespace from the beginning and end
+	function tirm(str) {
+		return str.replace(TRIM_RE, '');
+	}
 
 	// Normalize a pathname
 	function normPath(path) {
@@ -85,7 +91,7 @@
 		}
 		// Top-level
 		else if (!/^(http:|https:|file:)?\/\//.test(uri)) {
-			uri = normPath(config.base + uri);
+			uri = normPath(config.base + tirm(uri));
 		}
 		return uri;
 	}
