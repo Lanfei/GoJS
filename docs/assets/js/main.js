@@ -74,6 +74,7 @@ define(function(require) {
 		$('.section').hide();
 		document.title = title + ' - ' + $(id).show().find('h2').eq(0).text();
 		setTimeout(window.scrollTo, 0, 0, 0);
+		ga('send', 'event', 'section', 'view', id);
 	}
 
 	function escape(code) {
