@@ -1,5 +1,5 @@
 /**
- * GoJS 1.7.1
+ * GoJS 1.7.2
  * https://github.com/Lanfei/GoJS
  * (c) 2014 [Lanfei](http://www.clanfei.com/)
  * A JavaScript module loader following CMD standard
@@ -17,7 +17,7 @@
 
 	// Current version of GoJS
 	var gojs = global.gojs = {
-		version: '1.7.1'
+		version: '1.7.2'
 	};
 
 	// Config Data of GoJS
@@ -130,7 +130,7 @@
 			uri = uri.substring(0, uri.length - 1);
 		}
 		// Add `.js` extension
-		else if (uri.indexOf('?') < 0 && !/(\.js(on)?|\.css|\/)$/.test(uri)) {
+		else if (uri.indexOf('?') < 0 && !/(\.js(on)?|\.xml|\.css|\/)$/.test(uri)) {
 			uri += '.js';
 		}
 
@@ -236,16 +236,22 @@
 
 	// Parse the routing uri
 	Module.parse = function(uri, referer) {
-		var routers = config.routers,
-			idList, uriList = [];
+		var idList,
+			uriList = [],
+			routers = config.routers;
 
 		// Check if the id matching in the router map
-		for (var key in routers) outer: {
+		for (var key in routers) {
+			var matched = false;
 			idList = routers[key];
 			for (var i = idList.length - 1; i >= 0; --i) {
 				if (id2Uri(idList[i], referer) === uri) {
-					break outer;
+					matched = true;
+					break;
 				}
+			}
+			if (matched) {
+				break;
 			}
 			key = null;
 		}
@@ -262,6 +268,7 @@
 			}
 			return key;
 		}
+
 		return uri;
 	};
 
