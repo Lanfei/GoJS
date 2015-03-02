@@ -4,6 +4,7 @@ module.exports = function(grunt) {
 		pkg: grunt.file.readJSON('package.json')
 	});
 
+	grunt.loadNpmTasks('grunt-text-replace');
 	grunt.loadNpmTasks('grunt-contrib-uglify');
 
 	grunt.registerTask('default', function() {
@@ -17,9 +18,19 @@ module.exports = function(grunt) {
 						'dist/go-json.js': 'src/go-json.js'
 					}
 				}
+			},
+			replace: {
+				default: {
+					src: ['dist/go.js'],
+					dest: ['dist/go.js'],
+					replacements: [{
+						from: '@VERSION',
+						to: grunt.config.get('pkg').version
+					}]
+				}
 			}
 		});
 
-		grunt.task.run(['uglify']);
+		grunt.task.run(['uglify', 'replace']);
 	});
 };

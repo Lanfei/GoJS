@@ -1,5 +1,5 @@
 /**
- * GoJS 1.7.2
+ * GoJS @VERSION
  * https://github.com/Lanfei/GoJS
  * (c) 2014 [Lanfei](http://www.clanfei.com/)
  * A JavaScript module loader following CMD standard
@@ -17,7 +17,7 @@
 
 	// Current version of GoJS
 	var gojs = global.gojs = {
-		version: '1.7.2'
+		version: '@VERSION'
 	};
 
 	// Config Data of GoJS
