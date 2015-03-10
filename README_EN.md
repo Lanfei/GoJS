@@ -68,7 +68,7 @@ In theory, GoJS can be run in any browser.
 
 ##License
 
-GoJS is available under the terms of the [MIT License](https://github.com/Lanfei/GoJS/blob/master/LICENSE), it free for anyone to use.
+GoJS is available under the terms of the [MIT License](https://github.com/Lanfei/GoJS/blob/master/LICENSE), it is free for anyone to use.
 
 ##What's More
 
