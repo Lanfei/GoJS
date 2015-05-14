@@ -50,6 +50,7 @@ GoJS 是一个适用于 Web 的 JavaScript 模块加载器，它可以帮助你�
 
 - [go-css](#go-css)
 - [go-json](#go-json)
+- [go-text](#go-text)
 
 最后，向 <a target="_blank" href="http://requirejs.org">RequireJS</a> 和 <a target="_blank" href="http://seajs.org">Sea.js</a> 致敬，也向所有投身于开源工作的自由人致敬。
 
@@ -1224,7 +1225,7 @@ define(function(require, exports, module) {
 		<textarea class="markdown">
 ##go-css
 
-有时候可能需要将 CSS 文件也作为模块进行加载和管理，这时候可以使用 go-css 插件。
+有时候可能需要将 CSS 文件也作为模块依赖进行加载和管理，这时候可以使用 go-css 插件。
 
 ```js
 gojs.config({
@@ -1246,7 +1247,7 @@ define(function(require){
 		<textarea class="markdown">
 ##go-json
 
-有时候可能需要将 JSON 文件也作为模块进行加载和管理，这时候可以使用 go-json 插件。
+有时候可能需要将 JSON 文件也作为模块依赖进行加载和管理，这时候可以使用 go-json 插件。
 
 ```js
 gojs.config({
@@ -1259,6 +1260,28 @@ gojs.config({
 ```js
 define(function(require){
 	var data = require('data.json');
+	// some codes
+});
+```
+		</textarea>
+	</div>
+	<div id="go-text" class="section">
+		<textarea class="markdown">
+##go-text
+
+有时候可能需要将文本文件也作为模块依赖进行加载和管理，这时候可以使用 go-text 插件。
+
+```js
+gojs.config({
+	preload: ['go-text']
+});
+```
+
+然后在模块中进行引用：
+
+```js
+define(function(require){
+	var text = require('text.txt');
 	// some codes
 });
 ```
