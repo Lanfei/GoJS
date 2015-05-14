@@ -130,7 +130,7 @@
 			uri = uri.substring(0, uri.length - 1);
 		}
 		// Add `.js` extension
-		else if (uri.indexOf('?') < 0 && !/(\.js(on)?|\.xml|\.css|\/)$/.test(uri)) {
+		else if (uri.indexOf('?') < 0 && !/(\.js(on)?|\.(ht|x)ml|\.css|\/)$/.test(uri)) {
 			uri += '.js';
 		}
 
@@ -206,11 +206,10 @@
 			ids = [ids];
 		}
 
-		// Save the meta data
+		// Treat the referer as a temporary module
 		var module = new Module(referer);
 		module.dependencies = ids || [];
 		module.callback = callback || function() {};
-		module.status = STATUS.SAVED;
 		module.load();
 	};
 
@@ -288,7 +287,7 @@
 		loader.call(null, uri, function expose(exports) {
 			// Save loader's exports
 			if (exports) {
-				module.exports = exports;
+				module.factory = exports;
 				module.onload();
 			}
 			// Modules not in CMD standard
@@ -515,12 +514,13 @@
 
 	// A public API to load modules
 	gojs.use = function(ids, callback) {
-		Module.use(config.preload, null, config.base);
-		// Prevent multiple loading(Lazy Function Definition)
-		gojs.use = function(ids, callback) {
-			Module.use(ids, callback, location.href);
-		};
-		gojs.use.apply(null, arguments);
+		Module.use(config.preload, function() {
+			// Prevent multiple loading(Lazy Function Definition)
+			gojs.use = function(ids, callback) {
+				Module.use(ids, callback, location.href);
+			};
+			gojs.use(ids, callback);
+		}, config.base);
 	};
 
 	/**

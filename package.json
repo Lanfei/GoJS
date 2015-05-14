@@ -1,13 +1,13 @@
 {
-	"name": "GoJS",
-	"version": "1.7.2",
-	"repository": "git@github.com:Lanfei/GoJS.git",
-	"author": "Lanfei<CooLanfei@163.com>",
-	"description": "A JavaScript module loader following CMD standard",
-	"homepage": "https://github.com/Lanfei/GoJS",
-	"dependencies": {
-		"grunt": "~0.4.2",
-		"grunt-text-replace": "^0.4.0",
-		"grunt-contrib-uglify": "~0.6.0"
-	}
+  "name": "GoJS",
+  "version": "1.7.3",
+  "repository": "git@github.com:Lanfei/GoJS.git",
+  "author": "Lanfei<CooLanfei@163.com>",
+  "description": "A JavaScript module loader following CMD standard",
+  "homepage": "https://github.com/Lanfei/GoJS",
+  "dependencies": {
+    "grunt": "^0.4.5",
+    "grunt-text-replace": "^0.4.0",
+    "grunt-contrib-uglify": "^0.9.1"
+  }
 }

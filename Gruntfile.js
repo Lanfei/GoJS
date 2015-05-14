@@ -15,7 +15,8 @@ module.exports = function(grunt) {
 			plugins: {
 				files: {
 					'dist/go-css.js': 'src/go-css.js',
-					'dist/go-json.js': 'src/go-json.js'
+					'dist/go-json.js': 'src/go-json.js',
+					'dist/go-text.js': 'src/go-text.js'
 				}
 			}
 		},

@@ -1,0 +1,1 @@
+!function(){function a(){try{return new window.XMLHttpRequest}catch(a){}}function b(){try{return new window.ActiveXObject("Microsoft.XMLHTTP")}catch(a){}}function c(c,d){var e=a()||b();e.onreadystatechange=function(){4==e.readyState&&(200==e.status?d(e.responseText):d())},e.open("GET",c,!0),e.send()}gojs.config({loaders:[[/\.(txt|html)$/,c]]})}();
