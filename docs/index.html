@@ -669,7 +669,7 @@ define(function(require, exports, module) {
 
 ###相对标识
 
-相对标识以 `.` 开头，在模块环境中（`define` 的 `factory` 方法里面）时，始终相对于当前模块的地址来解析；在页面环境中（`gojs.use`）时，始终相对于当前页面的地址来解析。
+相对标识以 `.` 开头，在模块环境（`factory` 构造方法）中时，始终相对于当前模块的地址来解析；在页面环境（`gojs.use` 或 `preload` 选项）中时，始终相对于当前页面的地址来解析。
 
 ```js
 // 在 http://example.com/js/a.js 的 factory 中：
