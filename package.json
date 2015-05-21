@@ -1,6 +1,6 @@
 {
   "name": "GoJS",
-  "version": "1.7.3",
+  "version": "1.7.4",
   "repository": "git@github.com:Lanfei/GoJS.git",
   "author": "Lanfei<CooLanfei@163.com>",
   "description": "A JavaScript module loader following CMD standard",

@@ -520,7 +520,7 @@
 				Module.use(ids, callback, location.href);
 			};
 			gojs.use(ids, callback);
-		}, config.base);
+		}, location.href);
 	};
 
 	/**
