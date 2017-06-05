@@ -1,10 +1,10 @@
-#GoJS
+# GoJS
 
 GoJS is a JavaScript module loader for web, which can organize your codes and modules in a elegant way. It solves the problem of module dependencies and naming conflicts, but also solves the difficulty in merging compaction beside the other similar frameworks, so you can make your coding more enjoyable.
 
-##Usage
+## Usage
 
-###1st Step, Initialize GoJS
+### 1st Step, Initialize GoJS
 
 ```html
 <!--
@@ -27,7 +27,7 @@ gojs.use('main');
 </script>
 ```
 
-###2nd Step, Write Modules Following [CMD Standard](https://github.com/cmdjs/specification/blob/master/draft/module.md)
+### 2nd Step, Write Modules Following [CMD Standard](https://github.com/cmdjs/specification/blob/master/draft/module.md)
 
 ```js
 // main.js
@@ -50,9 +50,9 @@ define(function(require, exports, module){
 });
 ```
 
-###3st Step, Enjoy!
+### 3st Step, Enjoy!
 
-##Compatibility
+## Compatibility
 
 GoJS compatible with all major browsers:
 
@@ -66,11 +66,11 @@ IE 5.5+
 
 In theory, GoJS can be run in any browser.
 
-##License
+## License
 
 GoJS is available under the terms of the [MIT License](https://github.com/Lanfei/GoJS/blob/master/LICENSE), it is free for anyone to use.
 
-##What's More
+## What's More
 
 >Finally, a tribute to <a target="_blank" href="http://requirejs.org">RequireJS</a> and <a target="_blank" href="http://seajs.org">Sea.js</a>, but also to pay tribute to all the people who work dedicated to open source.
 
